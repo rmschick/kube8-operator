@@ -1,0 +1,15 @@
+---
+metadata:
+  environment: development
+  customer:
+    id: c6d22e04-5010-4500-a2ea-02c480ae2794
+    name: cyderes
+  instance: test
+  tenant:
+    id: eb844545-426a-4fc2-836a-2d99d2626c72
+    reference: CYENGDEV
+    alias: CYENGDEV
+logging:
+  format: prettyjson
+  verbose: true
+  omitMetadata: true

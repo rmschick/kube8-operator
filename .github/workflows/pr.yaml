@@ -1,0 +1,50 @@
+name: "PR Checks"
+
+on:
+  pull_request:
+    branches:
+      - main
+
+env:
+  GOPRIVATE: "github.com/FishtechCSOC"
+  CGO_ENABLED: "0"
+  GCP_PROJECT: "cyderes-dev"
+  ARTIFACT_REGISTRY_HOST: "us-central1-docker.pkg.dev"
+  ARTIFACT_REGISTRY_REPO: "cyderes-container-repo"
+
+jobs:
+  semantic:
+    runs-on: self-hosted
+    steps:
+      - name: Validate PR title
+        uses: amannn/action-semantic-pull-request@v5.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  main:
+    permissions:
+      contents: write
+      packages: write
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ">=1.20.0"
+      - name: Install goreleaser
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          install-only: true
+      - name: Run Linter
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.51.2
+          args: --timeout=5m
+      - name: Run Tests
+        run: go install gotest.tools/gotestsum@latest && make test
+      - name: Build artifacts
+        run: make build
+        env:
+          REGISTRY: ${{ env.ARTIFACT_REGISTRY_HOST }}/${{ env.GCP_PROJECT }}/${{ env.ARTIFACT_REGISTRY_REPO }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

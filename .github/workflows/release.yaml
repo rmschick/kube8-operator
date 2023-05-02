@@ -1,0 +1,55 @@
+name: "Release CI"
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  GOPRIVATE: "github.com/FishtechCSOC"
+  CGO_ENABLED: "0"
+  GCP_PROJECT: "cyderes-prod"
+  ARTIFACT_REGISTRY_HOST: "us-central1-docker.pkg.dev"
+  ARTIFACT_REGISTRY_REPO: "cyderes-container-repo"
+
+jobs:
+  helm-package:
+    name: "Helm Package"
+    uses: FishtechCSOC/github-actions/.github/workflows/helm-package.yaml@main
+    secrets: inherit
+  build:
+    permissions:
+      contents: write
+      packages: write
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ">=1.20.0"
+      - name: Install goreleaser
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          install-only: true
+      - name: Docker login
+        uses: 'docker/login-action@v2'
+        with:
+          registry: ${{ env.ARTIFACT_REGISTRY_HOST }}
+          username: _json_key_base64
+          password: ${{ secrets.GCP_ARGO_SERVICE_ACCOUNT }}
+      - name: Build artifacts
+        run: make release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY: ${{ env.ARTIFACT_REGISTRY_HOST }}/${{ env.GCP_PROJECT }}/${{ env.ARTIFACT_REGISTRY_REPO }}
+      - name: Docker push
+        run: docker push ${ARTIFACT_REGISTRY_HOST}/${GCP_PROJECT}/${ARTIFACT_REGISTRY_REPO}/${{ github.event.repository.name }}:${{ github.ref_name }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist

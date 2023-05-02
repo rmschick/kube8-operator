@@ -1,0 +1,11 @@
+package chunk
+
+import (
+	"github.com/FishtechCSOC/common-go/pkg/logging/v1"
+	"github.com/sirupsen/logrus"
+)
+
+// SetupChunkerLogger is just used to help remove some boilerplate around setting up loggers to make code more DRY.
+func SetupChunkerLogger(chunkerName string, chunker Chunker, logger *logrus.Entry) *logrus.Entry {
+	return logging.CreateTypeLogger(logger, chunkerName, chunker)
+}

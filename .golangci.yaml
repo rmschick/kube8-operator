@@ -1,0 +1,53 @@
+run:
+  tests: false
+  modules-download-mode: vendor
+
+linters-settings:
+  dupl:
+    threshold: 100
+  funlen:
+    lines: 80
+    statements: 60
+  gci:
+    sections:
+      - standard # Captures all standard packages if they do not match another section.
+      - default # Contains all imports that could not be matched to another section type.
+      - prefix(github.com/FishtechCSOC/locomotive-collector-template)
+  gocritic:
+    disabled-checks:
+      - sloppyLen
+  gocyclo:
+    min-complexity: 10
+  goimports:
+    local-prefixes: github.com/FishtechCSOC/locomotive-collector-template
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+  misspell:
+    locale: US
+  varnamelen:
+    ignore-names:
+      - ok
+      - err
+
+linters:
+  enable-all: true
+  disable:
+    - goerr113
+    - lll
+    - nolintlint
+    - typecheck
+    - wrapcheck
+    - exhaustivestruct # DO NOT ENABLE, SHOULD BE USED SPARINGLY
+    - exhaustruct # DO NOT ENABLE, SHOULD BE USED SPARINGLY
+    - deadcode # IS DEPRECATED
+    - golint # IS DEPRECATED
+    - ifshort # IS DEPRECATED
+    - interfacer # IS DEPRECATED
+    - maligned # IS DEPRECATED
+    - nosnakecase # IS DEPRECATED
+    - scopelint # IS DEPRECATED
+    - structcheck # IS DEPRECATED
+    - varcheck # IS DEPRECATED
+  fast: false

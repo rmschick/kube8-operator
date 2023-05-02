@@ -1,0 +1,6 @@
+dependencies:
+- name: standard-collector
+  repository: s3://cyderes-production-helm/charts
+  version: 0.7.1
+digest: sha256:c08365cf671701dc42ab09b48621f616ffe6f001399d97c5851d89e5d2f21f8b
+generated: "2023-03-14T12:07:10.831435-05:00"
