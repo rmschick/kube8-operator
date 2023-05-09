@@ -1,10 +1,10 @@
 FROM gcr.io/distroless/static:nonroot
 
-WORKDIR /locomotive-collector-template
+WORKDIR /terminal-poc-deployment
 
-ENV PATH /locomotive-collector-template/bin:$PATH
+ENV PATH /terminal-poc-deployment/bin:$PATH
 
 # Copy the binary
-COPY locomotive-collector-template /bin/
+COPY terminal-poc-deployment /bin/
 
-ENTRYPOINT ["locomotive-collector-template"]
+ENTRYPOINT ["terminal-poc-deployment"]

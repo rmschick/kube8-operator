@@ -12,6 +12,7 @@ func (tenant *Tenant) MergeLeft(other Tenant) Tenant {
 	return Tenant{
 		Reference: helpers.DefaultString(other.Reference, tenant.Reference),
 		ID:        helpers.DefaultString(other.ID, tenant.ID),
+		Name:      helpers.DefaultString(other.Name, tenant.Name),
 	}
 }
 
@@ -19,9 +20,10 @@ func (tenant *Tenant) MergeRight(other Tenant) Tenant {
 	return Tenant{
 		Reference: helpers.DefaultString(tenant.Reference, other.Reference),
 		ID:        helpers.DefaultString(tenant.ID, other.ID),
+		Name:      helpers.DefaultString(tenant.Name, other.Name),
 	}
 }
 
 func (tenant *Tenant) Empty() bool {
-	return tenant.Reference == "" && tenant.ID == ""
+	return tenant.Reference == "" && tenant.ID == "" && tenant.Name == ""
 }

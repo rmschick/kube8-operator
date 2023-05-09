@@ -12,14 +12,14 @@ linters-settings:
     sections:
       - standard # Captures all standard packages if they do not match another section.
       - default # Contains all imports that could not be matched to another section type.
-      - prefix(github.com/FishtechCSOC/locomotive-collector-template)
+      - prefix(github.com/FishtechCSOC/terminal-poc-deployment) # Captures all imports that start with the given prefix.
   gocritic:
     disabled-checks:
       - sloppyLen
   gocyclo:
     min-complexity: 10
   goimports:
-    local-prefixes: github.com/FishtechCSOC/locomotive-collector-template
+    local-prefixes: github.com/FishtechCSOC/terminal-poc-deployment
   govet:
     enable-all: true
     disable:

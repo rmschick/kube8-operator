@@ -1,0 +1,55 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: services.mydomain.com
+spec:
+  group: mydomain.com
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            spec:
+              type: object
+              properties:
+                type:
+                  type: string
+                ports:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      port:
+                        type: integer
+                      targetPort:
+                        type: string
+                      protocol:
+                        type: string
+                      name:
+                        type: string
+                selector:
+                  type: object
+                  properties:
+                    app.kubernetes.io/name:
+                      type: string
+                    app.kubernetes.io/instance:
+                      type: string
+          required:
+            - apiVersion
+            - kind
+            - metadata
+            - spec
+  scope: Namespaced
+  names:
+    plural: services
+    singular: service
+    kind: Service
+    shortNames:
+      - svc
