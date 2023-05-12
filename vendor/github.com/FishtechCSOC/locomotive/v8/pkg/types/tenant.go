@@ -8,6 +8,14 @@ type Tenant struct {
 	Name      string `json:"name" mapstructure:"name"`
 }
 
+func (tenant *Tenant) DeepCopy() Tenant {
+	return Tenant{
+		ID:        tenant.ID,
+		Reference: tenant.Reference,
+		Name:      tenant.Name,
+	}
+}
+
 func (tenant *Tenant) MergeLeft(other Tenant) Tenant {
 	return Tenant{
 		Reference: helpers.DefaultString(other.Reference, tenant.Reference),

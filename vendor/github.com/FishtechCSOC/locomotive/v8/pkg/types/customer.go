@@ -9,6 +9,13 @@ type Customer struct {
 	ID   string `json:"id" mapstructure:"id"`
 }
 
+func (customer *Customer) DeepCopy() Customer {
+	return Customer{
+		Name: customer.Name,
+		ID:   customer.ID,
+	}
+}
+
 func (customer *Customer) MergeLeft(other Customer) Customer {
 	return Customer{
 		Name: helpers.DefaultString(other.Name, customer.Name),

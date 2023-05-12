@@ -1,22 +1,19 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
-	kubeinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
+	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
-	clientset "k8s.io/sample-controller/pkg/generated/clientset/versioned"
-	"k8s.io/sample-controller/pkg/signals"
-	"time"
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	informers "k8s.io/sample-controller/pkg/generated/informers/externalversions"
-
-	"github.com/FishtechCSOC/terminal-poc-deployment/internal/controller"
-	"github.com/FishtechCSOC/terminal-poc-deployment/internal/deploy"
+	"github.com/FishtechCSOC/terminal-poc-deployment/internal/operator"
 )
 
 var (
@@ -25,30 +22,16 @@ var (
 )
 
 func main() {
-	filepath := flag.String("f", "", "path to YAML file")
-	flag.Parse()
-
-	// Check if a YAML file was provided as a flag
-	if *filepath == "" {
-		fmt.Println("Usage: go run main.go -f <yaml-file>")
-		return
-	}
-
-	deployment := deploy.LoadDeploymentData()
-
-	err := deploy.CreateDeployment(deployment, *filepath)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("finished")
+	ctx := context.Background()
 
 	klog.InitFlags(nil)
 	flag.Parse()
 
+	masterURL = ""
+	kubeconfig = ""
+
 	// set up signals so we handle the shutdown signal gracefully
-	ctx := signals.SetupSignalHandler()
-	logger := klog.FromContext(ctx)
+	logger := &logrus.Entry{}
 
 	cfg, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
 	if err != nil {
@@ -56,34 +39,38 @@ func main() {
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
-	kubeClient, err := kubernetes.NewForConfig(cfg)
+	// create a dynamic client
+	dynamicClient, err := dynamic.NewForConfig(cfg)
 	if err != nil {
-		logger.Error(err, "Error building kubernetes clientset")
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+		panic(err.Error())
 	}
 
-	exampleClient, err := clientset.NewForConfig(cfg)
+	crdResource := fmt.Sprintf("%s/%s", "example.com", "v1")
+
+	resources, err := dynamicClient.Resource(schema.GroupVersionResource{
+		Group:    "example.com",
+		Version:  "v1",
+		Resource: "services",
+	}).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		logger.Error(err, "Error building kubernetes clientset")
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+		panic(err.Error())
 	}
 
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
-	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
-
-	controller := controller.NewController(ctx, kubeClient, exampleClient,
-		kubeInformerFactory.Apps().V1().Deployments(),
-		exampleInformerFactory.Samplecontroller().V1alpha1().Foos())
-
-	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(ctx.done())
-	// Start method is non-blocking and runs all registered informers in a dedicated goroutine.
-	kubeInformerFactory.Start(ctx.Done())
-	exampleInformerFactory.Start(ctx.Done())
-
-	if err = controller.Run(ctx, 2); err != nil {
-		logger.Error(err, "Error running controller")
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	for _, r := range resources.Items {
+		fmt.Printf("Found custom resource: %s/%s\n", crdResource, r.GetName())
 	}
+
+	// Set up a new controller object.
+	ctrl := operator.NewController(cfg)
+
+	// Set up channels for stopping the controller.
+	stop := make(chan struct{})
+
+	err = ctrl.Start(stop)
+	if err != nil {
+		logger.Error(err, "Error starting controller")
+	}
+
 }
 
 func init() {

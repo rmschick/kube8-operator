@@ -13,6 +13,21 @@ type Source struct {
 	Infrastructure map[string]string `json:"infrastructure" mapstructure:"infrastructure"`
 }
 
+func (source *Source) DeepCopy() Source {
+	deepCopy := Source{
+		Infrastructure: make(map[string]string),
+		Type:           source.Type,
+		Path:           source.Path,
+		Agent:          source.Agent,
+	}
+
+	for k, v := range source.Infrastructure {
+		deepCopy.Infrastructure[k] = v
+	}
+
+	return deepCopy
+}
+
 func (source *Source) MergeLeft(other Source) Source {
 	return Source{
 		Agent:          helpers.DefaultString(other.Agent, source.Agent),

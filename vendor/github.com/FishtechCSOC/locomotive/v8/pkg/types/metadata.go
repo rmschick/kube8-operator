@@ -54,6 +54,31 @@ func CreateMetadata() Metadata {
 	}
 }
 
+func (metadata *Metadata) DeepCopy() Metadata {
+	deepCopy := Metadata{
+		Labels:           make(map[string]string),
+		BatchID:          metadata.BatchID,
+		Customer:         metadata.Customer.DeepCopy(),
+		Environment:      metadata.Environment,
+		Source:           metadata.Source.DeepCopy(),
+		DataType:         metadata.DataType,
+		Destinations:     make([]Destination, len(metadata.Destinations)),
+		TimestampField:   metadata.TimestampField,
+		PersistentObject: metadata.PersistentObject,
+		Instance:         metadata.Instance,
+		Namespace:        metadata.Instance,
+		Tenant:           metadata.Tenant.DeepCopy(),
+	}
+
+	for k, v := range metadata.Labels {
+		deepCopy.Labels[k] = v
+	}
+
+	copy(deepCopy.Destinations, metadata.Destinations)
+
+	return deepCopy
+}
+
 func (metadata *Metadata) Get(key string) string {
 	if metadata.Labels == nil {
 		return ""
