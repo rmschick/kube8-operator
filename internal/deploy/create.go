@@ -55,7 +55,6 @@ func CreateDeployment(deploymentInfo internal.Deployment, deploymentFile string)
 	renderAction := action.NewInstall(actionConfig)
 
 	renderAction.Namespace = "default"
-	renderAction.DryRun = true
 	renderAction.ReleaseName = deploymentInfo.Collector
 	renderAction.Version = "latest"
 

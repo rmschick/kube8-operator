@@ -46,9 +46,24 @@ func NewController(cfg *rest.Config) *Controller {
 	informer := informerFactory.Example().V1().Services()
 	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(object interface{}) {
+			deployment := deploy.LoadDeploymentData()
+
+			err := deploy.CreateDeployment(deployment, "/Users/ryan.schick/Desktop/FishtechRepos/terminal-poc-deployment/infra/development/cyengdev.yaml")
+			if err != nil {
+				panic(err)
+			}
+
 			klog.Infof("Added: %v", object)
 		},
 		UpdateFunc: func(oldObject, newObject interface{}) {
+
+			deployment := deploy.LoadDeploymentData()
+
+			err := deploy.CreateDeployment(deployment, "/Users/ryan.schick/Desktop/FishtechRepos/terminal-poc-deployment/infra/development/cyengdev.yaml")
+			if err != nil {
+				panic(err)
+			}
+
 			klog.Infof("Updated: %v", newObject)
 		},
 		DeleteFunc: func(object interface{}) {
@@ -145,13 +160,6 @@ func (c *Controller) SyncHandler(key string) error {
 	if !exists {
 		c.Delete(obj)
 		return nil
-	}
-
-	deployment := deploy.LoadDeploymentData()
-
-	err = deploy.CreateDeployment(deployment, "/Users/ryan.schick/Desktop/Fishtech Repos/terminal-poc-deployment/infra/development/cyengdev.yaml")
-	if err != nil {
-		panic(err)
 	}
 
 	// Your code goes here to handle the add/update/delete event of the Foo resource.
