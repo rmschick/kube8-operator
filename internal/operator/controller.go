@@ -1,8 +1,11 @@
 package operator
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -18,67 +21,81 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/FishtechCSOC/terminal-poc-deployment/internal/deploy"
-	servicev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/service/v1"
-	serviceclientset "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned"
-	servicescheme "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/scheme"
-	serviceinformers "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/informers/externalversions"
-	servicelister "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/listers/service/v1"
+	collectorv1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
+	collectorclientset "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned"
+	collectorscheme "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/scheme"
+	collectorinformers "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/informers/externalversions"
+	collectorlister "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/listers/collector/v1"
 )
 
 type Controller struct {
 	kubeclientset          kubernetes.Interface
 	apiextensionsclientset apiextensionsclientset.Interface
-	testresourceclientset  serviceclientset.Interface
+	testresourceclientset  collectorclientset.Interface
 	informer               cache.SharedIndexInformer
-	lister                 servicelister.ServiceLister
+	lister                 collectorlister.CollectorLister
 	recorder               record.EventRecorder
 	workqueue              workqueue.RateLimitingInterface
 }
 
-func NewController(cfg *rest.Config) *Controller {
-
+func NewController(ctx context.Context, cfg *rest.Config) *Controller {
+	// Create clients for interacting with Kubernetes API and Prometheus Operator API
 	kubeClient := kubernetes.NewForConfigOrDie(cfg)
 	apiextensionsClient := apiextensionsclientset.NewForConfigOrDie(cfg)
-	serviceClient := serviceclientset.NewForConfigOrDie(cfg)
+	serviceClient := collectorclientset.NewForConfigOrDie(cfg)
+	dynamicClient := dynamic.NewForConfigOrDie(cfg)
 
-	// create informer
-	informerFactory := serviceinformers.NewSharedInformerFactory(serviceClient, time.Minute*1)
-	informer := informerFactory.Example().V1().Services()
+	// Create informer factory to receive notifications about changes to services
+	informerFactory := collectorinformers.NewSharedInformerFactory(serviceClient, time.Minute*1)
+	informer := informerFactory.Example().V1().Collectors()
+
+	// Add event handlers for the informer
 	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		// AddFunc is called when a new service is added
 		AddFunc: func(object interface{}) {
-			deployment := deploy.LoadDeploymentData()
+			test := object.(*collectorv1.Collector).DeepCopy()
 
-			err := deploy.CreateDeployment(deployment, "/Users/ryan.schick/Desktop/FishtechRepos/terminal-poc-deployment/infra/development/cyengdev.yaml")
+			_, err := kubeClient.CoreV1().Namespaces().Get(ctx, test.Spec.Tenant.Reference, metav1.GetOptions{})
+			if err != nil {
+				klog.Infof("Namespace %s does not exist", test.Spec.Tenant.Reference)
+			}
+
+			err = deploy.CreateDeployment(test, "/Users/ryan.schick/Desktop/FishtechRepos/terminal-poc-deployment/infra/development/cyengdev.yaml")
 			if err != nil {
 				panic(err)
 			}
 
 			klog.Infof("Added: %v", object)
 		},
+		// UpdateFunc is called when an existing service is updated
 		UpdateFunc: func(oldObject, newObject interface{}) {
-
-			deployment := deploy.LoadDeploymentData()
-
-			err := deploy.CreateDeployment(deployment, "/Users/ryan.schick/Desktop/FishtechRepos/terminal-poc-deployment/infra/development/cyengdev.yaml")
-			if err != nil {
-				panic(err)
-			}
-
 			klog.Infof("Updated: %v", newObject)
 		},
+		// DeleteFunc is called when a service is deleted
 		DeleteFunc: func(object interface{}) {
+			err := deploy.DeleteResource(ctx, kubeClient, dynamicClient, object.(*collectorv1.Collector).DeepCopy())
+			if err != nil {
+				klog.Error(err)
+			}
+
 			klog.Infof("Deleted: %v", object)
 		},
 	})
 
+	// Start the informer factory to begin receiving events
 	informerFactory.Start(wait.NeverStop)
-	utilruntime.Must(servicev1.AddToScheme(servicescheme.Scheme))
+
+	// Add necessary schemes for custom resources
+	utilruntime.Must(collectorv1.AddToScheme(collectorscheme.Scheme))
+
+	// Create an event broadcaster to record events related to the controller
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(klog.Infof)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(servicescheme.Scheme, corev1.EventSource{Component: "service-controller"})
+	recorder := eventBroadcaster.NewRecorder(collectorscheme.Scheme, corev1.EventSource{Component: "service-controller"})
 
-	workqueue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	// Create a work queue for handling events
+	controllerWorkerQueue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
 	return &Controller{
 		kubeclientset:          kubeClient,
@@ -87,7 +104,7 @@ func NewController(cfg *rest.Config) *Controller {
 		informer:               informer.Informer(),
 		lister:                 informer.Lister(),
 		recorder:               recorder,
-		workqueue:              workqueue,
+		workqueue:              controllerWorkerQueue,
 	}
 }
 
@@ -110,13 +127,16 @@ func (c *Controller) Start(stopCh <-chan struct{}) error {
 }
 
 func (c *Controller) Enqueue(obj interface{}) {
+	// Retrieve the key for the object using the cache's MetaNamespaceKeyFunc
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
+		// If an error occurs while getting the key, log the error and return
 		klog.Errorf("failed to get key for object %+v: %v", obj, err)
 		return
 	}
-	c.workqueue.AddRateLimited(key)
 
+	// Add the key to the work queue with rate limiting
+	c.workqueue.AddRateLimited(key)
 }
 
 func (c *Controller) Update(oldObj, newObj interface{}) {
@@ -125,6 +145,9 @@ func (c *Controller) Update(oldObj, newObj interface{}) {
 
 func (c *Controller) Delete(obj interface{}) {
 	// implement delete logic
+
+	// lets us use the object as a collector with all properties
+	_ = obj.(*collectorv1.Collector).DeepCopy()
 }
 
 func (c *Controller) RunWorker() {

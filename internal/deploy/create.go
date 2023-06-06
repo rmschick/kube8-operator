@@ -3,6 +3,12 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"golang.org/x/oauth2"
+	"gopkg.in/yaml.v3"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/cli"
 	"net/http"
 	"os"
 
@@ -11,25 +17,24 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/cli"
+	"github.com/google/go-github/v52/github"
 
-	"github.com/FishtechCSOC/terminal-poc-deployment/internal"
+	v1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
 )
 
 const (
-	bucketName = "cyderes-development-helm"
-	chartPath  = "charts/"
+	chartPath   = "charts/"
+	githubToken = "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"
+	owner       = "FishtechCSOC"
 )
 
 func myDebug(format string, v ...interface{}) {
 	fmt.Printf(format, v...)
 }
 
-func CreateDeployment(deploymentInfo internal.Deployment, deploymentFile string) error {
-	collectorChart, err := getCollectorChart(deploymentInfo)
+// CreateDeployment creates a Kubernetes deployment in the cluster
+func CreateDeployment(resource *v1.Collector, deploymentFile string) error {
+	collectorChart, err := getCollectorChart(resource)
 	if err != nil {
 		fmt.Printf("could not get collector chart: %v", err)
 
@@ -43,7 +48,9 @@ func CreateDeployment(deploymentInfo internal.Deployment, deploymentFile string)
 		return err
 	}
 
+	// Create a Helm action configuration
 	setting := cli.New()
+	setting.SetNamespace(resource.Spec.Tenant.Reference)
 	actionConfig := new(action.Configuration)
 
 	if err := actionConfig.Init(setting.RESTClientGetter(), setting.Namespace(), "memory", myDebug); err != nil {
@@ -53,10 +60,20 @@ func CreateDeployment(deploymentInfo internal.Deployment, deploymentFile string)
 	}
 
 	renderAction := action.NewInstall(actionConfig)
+	renderAction.ReleaseName = resource.Spec.Collector.Name + "-" + resource.Spec.Tenant.Instance
+	renderAction.Namespace = resource.Spec.Tenant.Reference
 
-	renderAction.Namespace = "default"
-	renderAction.ReleaseName = deploymentInfo.Collector
-	renderAction.Version = "latest"
+	switch resource.Spec.Environment {
+	case "development":
+		renderAction.Version = "latest"
+		collectorChart.Values["image"] = map[string]string{
+			"repository": "us-central1-docker.pkg.dev/cyderes-dev/cyderes-container-repo/" + resource.Spec.Collector.Name,
+		}
+	default:
+		renderAction.Version = resource.Spec.Collector.Version
+	}
+
+	collectorChart.Metadata.AppVersion = "latest"
 
 	// Render the template
 	rendered, err := renderAction.Run(collectorChart, vals)
@@ -66,11 +83,12 @@ func CreateDeployment(deploymentInfo internal.Deployment, deploymentFile string)
 		panic(err)
 	}
 
-	// Write the rendered template to a file
+	// Create a file to write the rendered template to for debugging purposes
 	file, err := os.Create("rendered_template.yaml")
 	if err != nil {
 		fmt.Printf("error could not render chart: %v", err)
-		os.Exit(1)
+
+		panic(err)
 	}
 	defer func(file *os.File) {
 		err := file.Close()
@@ -80,9 +98,11 @@ func CreateDeployment(deploymentInfo internal.Deployment, deploymentFile string)
 		}
 	}(file)
 
+	// Writing the contents of the rendered chart configuration
 	if _, err := file.WriteString(rendered.Manifest); err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+
+		panic(err)
 	}
 
 	fmt.Println("\nRendered template written to file.")
@@ -91,7 +111,7 @@ func CreateDeployment(deploymentInfo internal.Deployment, deploymentFile string)
 }
 
 // getCollectorChart retrieves the collector chart from the helm chart bucket in AWS
-func getCollectorChart(deploymentInfo internal.Deployment) (*chart.Chart, error) {
+func getCollectorChart(resource *v1.Collector) (*chart.Chart, error) {
 	ctx := context.Background()
 
 	awsCreds := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider("AKIAYEFJN5H3DMBXIYMU", "T6RtFrub14LlXKR+KO6YbouWdrgEqQ7pyt0o5x1A", ""))
@@ -103,9 +123,15 @@ func getCollectorChart(deploymentInfo internal.Deployment) (*chart.Chart, error)
 
 	s3Client := s3.NewFromConfig(awsConfig)
 
+	chartName, bucketName, err := getLatestCollectorChartPath(ctx, resource)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the collector chart file from the aws bucket
 	object, err := s3Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucketName),
-		Key:    aws.String(chartPath + deploymentInfo.Collector + "-0.0.1.tgz"),
+		Key:    aws.String(chartName),
 	})
 	if err != nil {
 		return nil, err
@@ -117,4 +143,50 @@ func getCollectorChart(deploymentInfo internal.Deployment) (*chart.Chart, error)
 	}
 
 	return collectorChart, nil
+}
+
+// getLatestCollectorChartPath retrieves the latest collector chart path from the helm chart bucket in AWS whether it is in development or production
+func getLatestCollectorChartPath(ctx context.Context, resource *v1.Collector) (string, string, error) {
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: githubToken})
+	tc := oauth2.NewClient(ctx, ts)
+
+	// Create a GitHub client using the authenticated HTTP client
+	gitClient := github.NewClient(tc)
+
+	switch resource.Spec.Environment {
+	case "development":
+		chartName := chartPath + resource.Spec.Collector.Name + "-0.0.1.tgz"
+		bucketName := "cyderes-development-helm"
+
+		return chartName, bucketName, nil
+	default:
+		release, _, err := gitClient.Repositories.GetLatestRelease(ctx, owner, resource.Spec.Collector.Name)
+		if err != nil {
+			fmt.Printf("Failed to get latest release: %v", err)
+
+			return "", "", err
+		}
+
+		chartName := chartPath + resource.Spec.Collector.Name + "-" + *release.TagName + ".tgz"
+		bucketName := "cyderes-production-helm"
+
+		return chartName, bucketName, nil
+	}
+}
+
+// getValues unmarshals the collector configuration file into a map
+func getValues(deploymentFile string) (map[string]any, error) {
+	// Read the values file
+	values, err := os.ReadFile(deploymentFile)
+	if err != nil {
+		return nil, err
+	}
+
+	vals := map[string]any{}
+	err = yaml.Unmarshal(values, &vals)
+	if err != nil {
+		return nil, err
+	}
+
+	return vals, nil
 }

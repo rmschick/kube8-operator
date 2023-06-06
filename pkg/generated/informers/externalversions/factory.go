@@ -24,8 +24,8 @@ import (
 	time "time"
 
 	versioned "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned"
+	collector "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/informers/externalversions/collector"
 	internalinterfaces "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/informers/externalversions/internalinterfaces"
-	service "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/informers/externalversions/service"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -243,9 +243,9 @@ type SharedInformerFactory interface {
 	// client.
 	InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer
 
-	Example() service.Interface
+	Example() collector.Interface
 }
 
-func (f *sharedInformerFactory) Example() service.Interface {
-	return service.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Example() collector.Interface {
+	return collector.New(f, f.namespace, f.tweakListOptions)
 }

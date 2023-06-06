@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"net/http"
 
-	examplev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/typed/service/v1"
+	examplev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/typed/collector/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

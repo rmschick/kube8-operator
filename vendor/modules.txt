@@ -60,6 +60,26 @@ github.com/Masterminds/sprig/v3
 # github.com/Masterminds/squirrel v1.5.4
 ## explicit; go 1.14
 github.com/Masterminds/squirrel
+# github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8
+## explicit; go 1.13
+github.com/ProtonMail/go-crypto/bitcurves
+github.com/ProtonMail/go-crypto/brainpool
+github.com/ProtonMail/go-crypto/eax
+github.com/ProtonMail/go-crypto/internal/byteutil
+github.com/ProtonMail/go-crypto/ocb
+github.com/ProtonMail/go-crypto/openpgp
+github.com/ProtonMail/go-crypto/openpgp/aes/keywrap
+github.com/ProtonMail/go-crypto/openpgp/armor
+github.com/ProtonMail/go-crypto/openpgp/ecdh
+github.com/ProtonMail/go-crypto/openpgp/ecdsa
+github.com/ProtonMail/go-crypto/openpgp/eddsa
+github.com/ProtonMail/go-crypto/openpgp/elgamal
+github.com/ProtonMail/go-crypto/openpgp/errors
+github.com/ProtonMail/go-crypto/openpgp/internal/algorithm
+github.com/ProtonMail/go-crypto/openpgp/internal/ecc
+github.com/ProtonMail/go-crypto/openpgp/internal/encoding
+github.com/ProtonMail/go-crypto/openpgp/packet
+github.com/ProtonMail/go-crypto/openpgp/s2k
 # github.com/arunsworld/nursery v0.6.0
 ## explicit; go 1.13
 github.com/arunsworld/nursery
@@ -191,6 +211,20 @@ github.com/chai2010/gettext-go
 github.com/chai2010/gettext-go/mo
 github.com/chai2010/gettext-go/plural
 github.com/chai2010/gettext-go/po
+# github.com/cloudflare/circl v1.1.0
+## explicit; go 1.15
+github.com/cloudflare/circl/dh/x25519
+github.com/cloudflare/circl/dh/x448
+github.com/cloudflare/circl/ecc/goldilocks
+github.com/cloudflare/circl/internal/conv
+github.com/cloudflare/circl/internal/sha3
+github.com/cloudflare/circl/math
+github.com/cloudflare/circl/math/fp25519
+github.com/cloudflare/circl/math/fp448
+github.com/cloudflare/circl/math/mlsbset
+github.com/cloudflare/circl/sign
+github.com/cloudflare/circl/sign/ed25519
+github.com/cloudflare/circl/sign/ed448
 # github.com/containerd/containerd v1.7.1
 ## explicit; go 1.19
 github.com/containerd/containerd/archive/compression
@@ -353,6 +387,12 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
+# github.com/google/go-github/v52 v52.0.0
+## explicit; go 1.17
+github.com/google/go-github/v52/github
+# github.com/google/go-querystring v1.1.0
+## explicit; go 1.10
+github.com/google/go-querystring/query
 # github.com/google/gofuzz v1.2.0
 ## explicit; go 1.12
 github.com/google/gofuzz
@@ -522,6 +562,12 @@ github.com/peterbourgon/diskv
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
+## explicit
+# github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.65.2
+## explicit; go 1.17
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1
 # github.com/prometheus/client_golang v1.15.1
 ## explicit; go 1.17
 github.com/prometheus/client_golang/prometheus
@@ -644,6 +690,7 @@ golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/scrypt
+golang.org/x/crypto/sha3
 # golang.org/x/mod v0.10.0
 ## explicit; go 1.17
 golang.org/x/mod/internal/lazyregexp

@@ -1,0 +1,28 @@
+# resource
+apiVersion: example.com/v1
+kind: Collector
+metadata:
+  name: cyengdev-cisco-amp-collector
+  namespace: poc-testing
+  labels:
+    helm.sh/chart: cisco-amp-collector-0.0.1
+    app.kubernetes.io/name: cisco-amp-collector
+    app.kubernetes.io/instance: cisco-amp-collector-main
+    cy_dept: platform-engineering
+    cy_dept_group: data
+    cy_env_type: development
+    cy_env_name: gke-dev
+    cy_tenant_ref: CYENGDEV
+    app.kubernetes.io/version: "latest"
+    app.kubernetes.io/managed-by: Helm
+    privateService: "true"
+spec:
+  collector:
+    name: cisco-amp-collector
+    version: head
+    configuration: adfladjfewfgbsogwjiogjwio89452348907
+  tenant:
+    id: "123412341234"
+    reference: poc-testing
+    instance: main
+  environment: development

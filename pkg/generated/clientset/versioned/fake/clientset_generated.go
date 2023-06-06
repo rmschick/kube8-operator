@@ -20,8 +20,8 @@ package fake
 
 import (
 	clientset "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned"
-	examplev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/typed/service/v1"
-	fakeexamplev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/typed/service/v1/fake"
+	examplev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/typed/collector/v1"
+	fakeexamplev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/typed/collector/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

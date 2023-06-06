@@ -19,8 +19,8 @@ limitations under the License.
 package applyconfiguration
 
 import (
-	v1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/service/v1"
-	servicev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/applyconfiguration/service/v1"
+	v1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
+	collectorv1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/applyconfiguration/collector/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -29,10 +29,14 @@ import (
 func ForKind(kind schema.GroupVersionKind) interface{} {
 	switch kind {
 	// Group=example.com, Version=v1
-	case v1.SchemeGroupVersion.WithKind("Service"):
-		return &servicev1.ServiceApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("Collector"):
+		return &collectorv1.CollectorApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("CollectorInfo"):
+		return &collectorv1.CollectorInfoApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ServiceSpec"):
-		return &servicev1.ServiceSpecApplyConfiguration{}
+		return &collectorv1.ServiceSpecApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("TenantInfo"):
+		return &collectorv1.TenantInfoApplyConfiguration{}
 
 	}
 	return nil
