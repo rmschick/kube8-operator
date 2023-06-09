@@ -186,6 +186,7 @@ func getLatestCollectorChartPath(ctx context.Context, resource *v1.Collector) (s
 	}
 }
 
+// getValues unmarshals the base64 encoded YAML string into a map
 func getValues(configuration string) (map[string]interface{}, error) {
 	// Decode the base64 encoded YAML string
 	decodedYAML, err := base64.StdEncoding.DecodeString(configuration)

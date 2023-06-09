@@ -25,7 +25,10 @@ func UpdateCollector(ctx context.Context, clientset *kubernetes.Clientset, oldCR
 			return fmt.Errorf("error initializing action config: %v", err)
 		}
 
+		// do something here
 	}
+
+	// do some more here
 
 	return nil
 }
