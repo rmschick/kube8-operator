@@ -26,7 +26,7 @@ type TenantInfo struct {
 	Instance  string `json:"instance"`
 }
 
-type ServiceSpec struct {
+type CollectorSpec struct {
 	Collector   CollectorInfo `json:"collector"`
 	Tenant      TenantInfo    `json:"tenant"`
 	Environment string        `json:"environment"`
@@ -34,19 +34,21 @@ type ServiceSpec struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:path=collector,scope=Cluster
+// +kubebuilder:resource:path=collector,scope=Namespaced
+// +kubebuilder:subresource:status
 
 // Collector describes a Collector resource
 type Collector struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec ServiceSpec `json:"spec,omitempty"`
+	Spec   CollectorSpec `json:"spec,omitempty"`
+	Status metav1.Status `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// MonorailRepoList is a list of MonorailRepo resources
+// CollectorList is a list of Collector resources
 type CollectorList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

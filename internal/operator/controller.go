@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/dynamic"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
@@ -53,30 +53,41 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		// AddFunc is called when a new service is added
 		AddFunc: func(object interface{}) {
-			test := object.(*collectorv1.Collector).DeepCopy()
-
-			_, err := kubeClient.CoreV1().Namespaces().Get(ctx, test.Spec.Tenant.Reference, metav1.GetOptions{})
+			err := deploy.CreateCollector(object.(*collectorv1.Collector).DeepCopy())
 			if err != nil {
-				klog.Infof("Namespace %s does not exist", test.Spec.Tenant.Reference)
+
+				object.(*collectorv1.Collector).Status.Status = metav1.StatusFailure
+				object.(*collectorv1.Collector).Status.Message = fmt.Sprintf("Collector %s failed to create. error: %v", object.(*collectorv1.Collector).Name, err)
+
+				klog.Error(err)
 			}
 
-			err = deploy.CreateDeployment(test, "/Users/ryan.schick/Desktop/FishtechRepos/terminal-poc-deployment/infra/development/cyengdev.yaml")
-			if err != nil {
-				panic(err)
-			}
+			object.(*collectorv1.Collector).Status.Status = metav1.StatusSuccess
+			object.(*collectorv1.Collector).Status.Message = fmt.Sprintf("Collector %s created successfully", object.(*collectorv1.Collector).Name)
 
-			klog.Infof("Added: %v", object)
+			klog.Infof("Added: %v", object.(*collectorv1.Collector).Name)
 		},
 		// UpdateFunc is called when an existing service is updated
 		UpdateFunc: func(oldObject, newObject interface{}) {
+			err := deploy.UpdateCollector(ctx, kubeClient, oldObject.(*collectorv1.Collector).DeepCopy(), newObject.(*collectorv1.Collector).DeepCopy())
+			if err != nil {
+				klog.Error(err)
+			}
+
+			newObject.(*collectorv1.Collector).Status.Status = metav1.StatusSuccess
+			newObject.(*collectorv1.Collector).Status.Message = fmt.Sprintf("Collector %s updated successfully", newObject.(*collectorv1.Collector).Name)
+
 			klog.Infof("Updated: %v", newObject)
 		},
 		// DeleteFunc is called when a service is deleted
 		DeleteFunc: func(object interface{}) {
-			err := deploy.DeleteResource(ctx, kubeClient, dynamicClient, object.(*collectorv1.Collector).DeepCopy())
+			err := deploy.DeleteCollector(ctx, kubeClient, dynamicClient, object.(*collectorv1.Collector).DeepCopy())
 			if err != nil {
 				klog.Error(err)
 			}
+
+			object.(*collectorv1.Collector).Status.Status = metav1.StatusSuccess
+			object.(*collectorv1.Collector).Status.Message = fmt.Sprintf("Collector %s deleted successfully", object.(*collectorv1.Collector).Name)
 
 			klog.Infof("Deleted: %v", object)
 		},
@@ -126,30 +137,6 @@ func (c *Controller) Start(stopCh <-chan struct{}) error {
 	return nil
 }
 
-func (c *Controller) Enqueue(obj interface{}) {
-	// Retrieve the key for the object using the cache's MetaNamespaceKeyFunc
-	key, err := cache.MetaNamespaceKeyFunc(obj)
-	if err != nil {
-		// If an error occurs while getting the key, log the error and return
-		klog.Errorf("failed to get key for object %+v: %v", obj, err)
-		return
-	}
-
-	// Add the key to the work queue with rate limiting
-	c.workqueue.AddRateLimited(key)
-}
-
-func (c *Controller) Update(oldObj, newObj interface{}) {
-	// implement update logic
-}
-
-func (c *Controller) Delete(obj interface{}) {
-	// implement delete logic
-
-	// lets us use the object as a collector with all properties
-	_ = obj.(*collectorv1.Collector).DeepCopy()
-}
-
 func (c *Controller) RunWorker() {
 	for {
 		obj, shutdown := c.workqueue.Get()
@@ -175,18 +162,16 @@ func (c *Controller) RunWorker() {
 func (c *Controller) SyncHandler(key string) error {
 	klog.Infof("Processing change to Pod %s", key)
 
-	obj, exists, err := c.informer.GetIndexer().GetByKey(key)
+	_, exists, err := c.informer.GetIndexer().GetByKey(key)
 	if err != nil {
 		return fmt.Errorf("error fetching object with key %s from store: %v", key, err)
 	}
 
 	if !exists {
-		c.Delete(obj)
 		return nil
 	}
 
-	// Your code goes here to handle the add/update/delete event of the Foo resource.
-	// Update the Status block of the Foo resource with the current status of the resource.
+	// maybe do something here to sync ??
 
 	klog.Info("syncHandler finished")
 	return nil

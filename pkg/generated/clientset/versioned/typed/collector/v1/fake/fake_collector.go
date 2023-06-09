@@ -104,6 +104,18 @@ func (c *FakeCollectors) Update(ctx context.Context, collector *v1.Collector, op
 	return obj.(*v1.Collector), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeCollectors) UpdateStatus(ctx context.Context, collector *v1.Collector, opts metav1.UpdateOptions) (*v1.Collector, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(collectorsResource, "status", c.ns, collector), &v1.Collector{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Collector), err
+}
+
 // Delete takes name of the collector and deletes it. Returns an error if one occurs.
 func (c *FakeCollectors) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
@@ -146,6 +158,29 @@ func (c *FakeCollectors) Apply(ctx context.Context, collector *collectorv1.Colle
 	}
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(collectorsResource, c.ns, *name, types.ApplyPatchType, data), &v1.Collector{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Collector), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeCollectors) ApplyStatus(ctx context.Context, collector *collectorv1.CollectorApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Collector, err error) {
+	if collector == nil {
+		return nil, fmt.Errorf("collector provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(collector)
+	if err != nil {
+		return nil, err
+	}
+	name := collector.Name
+	if name == nil {
+		return nil, fmt.Errorf("collector.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(collectorsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.Collector{})
 
 	if obj == nil {
 		return nil, err

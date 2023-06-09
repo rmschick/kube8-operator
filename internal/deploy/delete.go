@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -13,8 +14,8 @@ import (
 	v1Controller "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
 )
 
-// Assuming you have a clientset to interact with the Kubernetes API
-func DeleteResource(ctx context.Context, clientset *kubernetes.Clientset, dynamicClient dynamic.Interface, resource *v1Controller.Collector) error {
+// DeleteCollector deletes a collector deployment, service, serviceMonitor, and secret
+func DeleteCollector(ctx context.Context, clientset *kubernetes.Clientset, dynamicClient dynamic.Interface, resource *v1Controller.Collector) error {
 
 	// Create names of resources being deleted which follows the naming convention of the release name in the create.go file
 	// {collector-name}-{tenant-instance} ex: cisco-amp-collector-main
@@ -27,14 +28,14 @@ func DeleteResource(ctx context.Context, clientset *kubernetes.Clientset, dynami
 		return err
 	}
 
-	// Delete Service
-	err = clientset.CoreV1().Services(resource.Namespace).Delete(ctx, serviceName, v1.DeleteOptions{})
+	// Delete Secret
+	err = clientset.CoreV1().Secrets(resource.Namespace).Delete(ctx, releaseName, v1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
 
-	// Delete Secret
-	err = clientset.CoreV1().Secrets(resource.Namespace).Delete(ctx, releaseName, v1.DeleteOptions{})
+	// Delete Service
+	err = clientset.CoreV1().Services(resource.Namespace).Delete(ctx, serviceName, v1.DeleteOptions{})
 	if err != nil {
 		return err
 	}

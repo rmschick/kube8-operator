@@ -43,6 +43,7 @@ type CollectorsGetter interface {
 type CollectorInterface interface {
 	Create(ctx context.Context, collector *v1.Collector, opts metav1.CreateOptions) (*v1.Collector, error)
 	Update(ctx context.Context, collector *v1.Collector, opts metav1.UpdateOptions) (*v1.Collector, error)
+	UpdateStatus(ctx context.Context, collector *v1.Collector, opts metav1.UpdateOptions) (*v1.Collector, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Collector, error)
@@ -50,6 +51,7 @@ type CollectorInterface interface {
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Collector, err error)
 	Apply(ctx context.Context, collector *collectorv1.CollectorApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Collector, err error)
+	ApplyStatus(ctx context.Context, collector *collectorv1.CollectorApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Collector, err error)
 	CollectorExpansion
 }
 
@@ -139,6 +141,22 @@ func (c *collectors) Update(ctx context.Context, collector *v1.Collector, opts m
 	return
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *collectors) UpdateStatus(ctx context.Context, collector *v1.Collector, opts metav1.UpdateOptions) (result *v1.Collector, err error) {
+	result = &v1.Collector{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("collectors").
+		Name(collector.Name).
+		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(collector).
+		Do(ctx).
+		Into(result)
+	return
+}
+
 // Delete takes name of the collector and deletes it. Returns an error if one occurs.
 func (c *collectors) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
@@ -200,6 +218,36 @@ func (c *collectors) Apply(ctx context.Context, collector *collectorv1.Collector
 		Namespace(c.ns).
 		Resource("collectors").
 		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *collectors) ApplyStatus(ctx context.Context, collector *collectorv1.CollectorApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Collector, err error) {
+	if collector == nil {
+		return nil, fmt.Errorf("collector provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(collector)
+	if err != nil {
+		return nil, err
+	}
+
+	name := collector.Name
+	if name == nil {
+		return nil, fmt.Errorf("collector.Name must be provided to Apply")
+	}
+
+	result = &v1.Collector{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("collectors").
+		Name(*name).
+		SubResource("status").
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).

@@ -29,7 +29,8 @@ import (
 type CollectorApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *ServiceSpecApplyConfiguration `json:"spec,omitempty"`
+	Spec                             *CollectorSpecApplyConfiguration `json:"spec,omitempty"`
+	Status                           *metav1.Status                   `json:"status,omitempty"`
 }
 
 // Collector constructs an declarative configuration of the Collector type for use with
@@ -204,7 +205,15 @@ func (b *CollectorApplyConfiguration) ensureObjectMetaApplyConfigurationExists()
 // WithSpec sets the Spec field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Spec field is set to the value of the last call.
-func (b *CollectorApplyConfiguration) WithSpec(value *ServiceSpecApplyConfiguration) *CollectorApplyConfiguration {
+func (b *CollectorApplyConfiguration) WithSpec(value *CollectorSpecApplyConfiguration) *CollectorApplyConfiguration {
 	b.Spec = value
+	return b
+}
+
+// WithStatus sets the Status field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Status field is set to the value of the last call.
+func (b *CollectorApplyConfiguration) WithStatus(value metav1.Status) *CollectorApplyConfiguration {
+	b.Status = &value
 	return b
 }

@@ -2,15 +2,11 @@ package deploy
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
-	"golang.org/x/oauth2"
-	"gopkg.in/yaml.v3"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/cli"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/FishtechCSOC/common-go/pkg/metrics/instrumentation"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -18,22 +14,32 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/go-github/v52/github"
+	"golang.org/x/oauth2"
+	"gopkg.in/yaml.v3"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/cli"
 
 	v1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
 )
 
 const (
 	chartPath   = "charts/"
-	githubToken = "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"
+	githubToken = ""
 	owner       = "FishtechCSOC"
 )
 
+// myDebug is a function that implements the Debug interface for Helm
 func myDebug(format string, v ...interface{}) {
 	fmt.Printf(format, v...)
 }
 
-// CreateDeployment creates a Kubernetes deployment in the cluster
-func CreateDeployment(resource *v1.Collector, deploymentFile string) error {
+// CreateCollector creates a Kubernetes deployment in the cluster
+func CreateCollector(resource *v1.Collector) error {
+	tenantNamespace := strings.ToLower(resource.Spec.Tenant.Reference)
+
+	// Get the collector chart from the helm chart bucket in AWS
 	collectorChart, err := getCollectorChart(resource)
 	if err != nil {
 		fmt.Printf("could not get collector chart: %v", err)
@@ -41,7 +47,8 @@ func CreateDeployment(resource *v1.Collector, deploymentFile string) error {
 		return err
 	}
 
-	vals, err := getValues(deploymentFile)
+	// Unmarshal the values file to use for the helm chart
+	vals, err := getValues(resource.Spec.Collector.Configuration)
 	if err != nil {
 		fmt.Printf("could not unmarshal values file: %v", err)
 
@@ -50,7 +57,7 @@ func CreateDeployment(resource *v1.Collector, deploymentFile string) error {
 
 	// Create a Helm action configuration
 	setting := cli.New()
-	setting.SetNamespace(resource.Spec.Tenant.Reference)
+	setting.SetNamespace(tenantNamespace)
 	actionConfig := new(action.Configuration)
 
 	if err := actionConfig.Init(setting.RESTClientGetter(), setting.Namespace(), "memory", myDebug); err != nil {
@@ -59,10 +66,12 @@ func CreateDeployment(resource *v1.Collector, deploymentFile string) error {
 		return err
 	}
 
+	// Create a Helm install action and set the release name and namespace configuration
 	renderAction := action.NewInstall(actionConfig)
 	renderAction.ReleaseName = resource.Spec.Collector.Name + "-" + resource.Spec.Tenant.Instance
-	renderAction.Namespace = resource.Spec.Tenant.Reference
+	renderAction.Namespace = tenantNamespace
 
+	// Set what collector image to use based on the environment
 	switch resource.Spec.Environment {
 	case "development":
 		renderAction.Version = "latest"
@@ -128,7 +137,7 @@ func getCollectorChart(resource *v1.Collector) (*chart.Chart, error) {
 		return nil, err
 	}
 
-	// Get the collector chart file from the aws bucket
+	// Get the collector chart file from aws bucket
 	object, err := s3Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(chartName),
@@ -137,6 +146,7 @@ func getCollectorChart(resource *v1.Collector) (*chart.Chart, error) {
 		return nil, err
 	}
 
+	// Load the collector chart from the aws object
 	collectorChart, err := loader.LoadArchive(object.Body)
 	if err != nil {
 		return nil, err
@@ -153,6 +163,8 @@ func getLatestCollectorChartPath(ctx context.Context, resource *v1.Collector) (s
 	// Create a GitHub client using the authenticated HTTP client
 	gitClient := github.NewClient(tc)
 
+	// Get the latest release for the collector chart based on the environment
+	// If the environment is production, then the latest release will be the latest release tag
 	switch resource.Spec.Environment {
 	case "development":
 		chartName := chartPath + resource.Spec.Collector.Name + "-0.0.1.tgz"
@@ -174,16 +186,16 @@ func getLatestCollectorChartPath(ctx context.Context, resource *v1.Collector) (s
 	}
 }
 
-// getValues unmarshals the collector configuration file into a map
-func getValues(deploymentFile string) (map[string]any, error) {
-	// Read the values file
-	values, err := os.ReadFile(deploymentFile)
+func getValues(configuration string) (map[string]interface{}, error) {
+	// Decode the base64 encoded YAML string
+	decodedYAML, err := base64.StdEncoding.DecodeString(configuration)
 	if err != nil {
 		return nil, err
 	}
 
-	vals := map[string]any{}
-	err = yaml.Unmarshal(values, &vals)
+	// Unmarshal the YAML into a map
+	vals := map[string]interface{}{}
+	err = yaml.Unmarshal(decodedYAML, &vals)
 	if err != nil {
 		return nil, err
 	}

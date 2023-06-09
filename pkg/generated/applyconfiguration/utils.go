@@ -33,8 +33,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &collectorv1.CollectorApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("CollectorInfo"):
 		return &collectorv1.CollectorInfoApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("ServiceSpec"):
-		return &collectorv1.ServiceSpecApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("CollectorSpec"):
+		return &collectorv1.CollectorSpecApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("TenantInfo"):
 		return &collectorv1.TenantInfoApplyConfiguration{}
 
