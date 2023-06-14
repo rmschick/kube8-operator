@@ -25,4 +25,4 @@ spec:
     id: "eb844545-426a-4fc2-836a-2d99d2626c72"
     reference: poc-testing
     instance: main
-  environment: development
+  cluster: gke-dev

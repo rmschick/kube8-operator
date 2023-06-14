@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright 2023 The Kubernetes collector-controller Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ package v1
 // CollectorSpecApplyConfiguration represents an declarative configuration of the CollectorSpec type for use
 // with apply.
 type CollectorSpecApplyConfiguration struct {
-	Collector   *CollectorInfoApplyConfiguration `json:"collector,omitempty"`
-	Tenant      *TenantInfoApplyConfiguration    `json:"tenant,omitempty"`
-	Environment *string                          `json:"environment,omitempty"`
+	Collector *CollectorInfoApplyConfiguration `json:"collector,omitempty"`
+	Tenant    *TenantInfoApplyConfiguration    `json:"tenant,omitempty"`
+	Cluster   *string                          `json:"cluster,omitempty"`
 }
 
 // CollectorSpecApplyConfiguration constructs an declarative configuration of the CollectorSpec type for use with
@@ -48,10 +48,10 @@ func (b *CollectorSpecApplyConfiguration) WithTenant(value *TenantInfoApplyConfi
 	return b
 }
 
-// WithEnvironment sets the Environment field in the declarative configuration to the given value
+// WithCluster sets the Cluster field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Environment field is set to the value of the last call.
-func (b *CollectorSpecApplyConfiguration) WithEnvironment(value string) *CollectorSpecApplyConfiguration {
-	b.Environment = &value
+// If called multiple times, the Cluster field is set to the value of the last call.
+func (b *CollectorSpecApplyConfiguration) WithCluster(value string) *CollectorSpecApplyConfiguration {
+	b.Cluster = &value
 	return b
 }

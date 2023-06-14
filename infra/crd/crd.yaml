@@ -1,20 +1,30 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  creationTimestamp: null
+  labels:
+    controller-tools.k8s.io: "1.0"
   name: collectors.example.com
 spec:
   group: example.com
+  scope: Namespaced
+  names:
+    plural: collectors
+    singular: collector
+    kind: Collector
   versions:
     - name: v1
       served: true
       storage: true
       schema:
+        # schema used for validation
         openAPIV3Schema:
           type: object
           properties:
             spec:
               type: object
               properties:
+                # collector: {name, version, configuration}
                 collector:
                   type: object
                   properties:
@@ -27,6 +37,7 @@ spec:
                     configuration:
                       type: string
                       description: Customer's Configuration of the collector
+                # tenant: {id, reference, instance}
                 tenant:
                   type: object
                   properties:
@@ -39,16 +50,14 @@ spec:
                     instance:
                       type: string
                       description: Instance of the tenant this collector is deployed for
-                environment:
+                # cluster will define the environment (dev, prod, etc)
+                cluster:
                   type: string
-                  description: Environment
+                  description: cluster
           required:
             - metadata
             - spec
-  scope: Namespaced
-  names:
-    plural: collectors
-    singular: collector
-    kind: Collector
-    shortNames:
-      - collector
+      # subresources for the custom resource
+      subresources:
+      # enables the status subresource
+        status: {}

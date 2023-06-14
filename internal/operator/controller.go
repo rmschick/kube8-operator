@@ -8,7 +8,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
@@ -20,7 +19,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
-	"github.com/FishtechCSOC/terminal-poc-deployment/internal/deploy"
+	"github.com/FishtechCSOC/terminal-poc-deployment/internal/reconciler"
 	collectorv1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
 	collectorclientset "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned"
 	collectorscheme "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/scheme"
@@ -53,43 +52,39 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		// AddFunc is called when a new service is added
 		AddFunc: func(object interface{}) {
-			err := deploy.CreateCollector(object.(*collectorv1.Collector).DeepCopy())
+			err := reconciler.CreateCollector(object.(*collectorv1.Collector).DeepCopy())
 			if err != nil {
-
-				object.(*collectorv1.Collector).Status.Status = metav1.StatusFailure
-				object.(*collectorv1.Collector).Status.Message = fmt.Sprintf("Collector %s failed to create. error: %v", object.(*collectorv1.Collector).Name, err)
-
 				klog.Error(err)
 			}
-
-			object.(*collectorv1.Collector).Status.Status = metav1.StatusSuccess
-			object.(*collectorv1.Collector).Status.Message = fmt.Sprintf("Collector %s created successfully", object.(*collectorv1.Collector).Name)
 
 			klog.Infof("Added: %v", object.(*collectorv1.Collector).Name)
 		},
 		// UpdateFunc is called when an existing service is updated
 		UpdateFunc: func(oldObject, newObject interface{}) {
-			err := deploy.UpdateCollector(ctx, kubeClient, oldObject.(*collectorv1.Collector).DeepCopy(), newObject.(*collectorv1.Collector).DeepCopy())
+
+			// Periodic resync will send update events for all known Services.
+			if oldObject.(*collectorv1.Collector).Generation == newObject.(*collectorv1.Collector).Generation {
+				klog.Infof("Synced")
+
+				return
+			}
+
+			// If the oldObject is not equal to the newObject, then update the service
+			err := reconciler.UpdateCollector(ctx, kubeClient, newObject.(*collectorv1.Collector).DeepCopy())
 			if err != nil {
 				klog.Error(err)
 			}
 
-			newObject.(*collectorv1.Collector).Status.Status = metav1.StatusSuccess
-			newObject.(*collectorv1.Collector).Status.Message = fmt.Sprintf("Collector %s updated successfully", newObject.(*collectorv1.Collector).Name)
-
-			klog.Infof("Updated: %v", newObject)
+			klog.Infof("Updated: %v", newObject.(*collectorv1.Collector).Name)
 		},
 		// DeleteFunc is called when a service is deleted
 		DeleteFunc: func(object interface{}) {
-			err := deploy.DeleteCollector(ctx, kubeClient, dynamicClient, object.(*collectorv1.Collector).DeepCopy())
+			err := reconciler.DeleteCollector(ctx, kubeClient, dynamicClient, object.(*collectorv1.Collector).DeepCopy())
 			if err != nil {
 				klog.Error(err)
 			}
 
-			object.(*collectorv1.Collector).Status.Status = metav1.StatusSuccess
-			object.(*collectorv1.Collector).Status.Message = fmt.Sprintf("Collector %s deleted successfully", object.(*collectorv1.Collector).Name)
-
-			klog.Infof("Deleted: %v", object)
+			klog.Infof("Deleted: %v", object.(*collectorv1.Collector).Name)
 		},
 	})
 

@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright 2023 The Kubernetes collector-controller Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,8 +29,8 @@ import (
 type CollectorApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *CollectorSpecApplyConfiguration `json:"spec,omitempty"`
-	Status                           *metav1.Status                   `json:"status,omitempty"`
+	Spec                             *CollectorSpecApplyConfiguration   `json:"spec,omitempty"`
+	Status                           *CollectorStatusApplyConfiguration `json:"status,omitempty"`
 }
 
 // Collector constructs an declarative configuration of the Collector type for use with
@@ -213,7 +213,7 @@ func (b *CollectorApplyConfiguration) WithSpec(value *CollectorSpecApplyConfigur
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *CollectorApplyConfiguration) WithStatus(value metav1.Status) *CollectorApplyConfiguration {
-	b.Status = &value
+func (b *CollectorApplyConfiguration) WithStatus(value *CollectorStatusApplyConfiguration) *CollectorApplyConfiguration {
+	b.Status = value
 	return b
 }

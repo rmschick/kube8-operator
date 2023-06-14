@@ -27,22 +27,25 @@ type TenantInfo struct {
 }
 
 type CollectorSpec struct {
-	Collector   CollectorInfo `json:"collector"`
-	Tenant      TenantInfo    `json:"tenant"`
-	Environment string        `json:"environment"`
+	Collector CollectorInfo `json:"collector"`
+	Tenant    TenantInfo    `json:"tenant"`
+	Cluster   string        `json:"cluster"`
 }
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:path=collector,scope=Namespaced
 // +kubebuilder:subresource:status
 
-// Collector describes a Collector resource
 type Collector struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CollectorSpec `json:"spec,omitempty"`
+	Spec   CollectorSpec   `json:"spec,omitempty"`
+	Status CollectorStatus `json:"status,omitempty"`
+}
+
+// CollectorStatus defines the observed state of Collector
+type CollectorStatus struct {
 	Status metav1.Status `json:"status,omitempty"`
 }
 

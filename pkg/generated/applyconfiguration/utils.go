@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright 2023 The Kubernetes collector-controller Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &collectorv1.CollectorInfoApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("CollectorSpec"):
 		return &collectorv1.CollectorSpecApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("CollectorStatus"):
+		return &collectorv1.CollectorStatusApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("TenantInfo"):
 		return &collectorv1.TenantInfoApplyConfiguration{}
 

@@ -1,4 +1,4 @@
-package deploy
+package reconciler
 
 import (
 	"context"
@@ -72,8 +72,8 @@ func CreateCollector(resource *v1.Collector) error {
 	renderAction.Namespace = tenantNamespace
 
 	// Set what collector image to use based on the environment
-	switch resource.Spec.Environment {
-	case "development":
+	switch resource.Spec.Cluster {
+	case "gke-dev":
 		renderAction.Version = "latest"
 		collectorChart.Values["image"] = map[string]string{
 			"repository": "us-central1-docker.pkg.dev/cyderes-dev/cyderes-container-repo/" + resource.Spec.Collector.Name,
@@ -165,8 +165,8 @@ func getLatestCollectorChartPath(ctx context.Context, resource *v1.Collector) (s
 
 	// Get the latest release for the collector chart based on the environment
 	// If the environment is production, then the latest release will be the latest release tag
-	switch resource.Spec.Environment {
-	case "development":
+	switch resource.Spec.Cluster {
+	case "gke-dev":
 		chartName := chartPath + resource.Spec.Collector.Name + "-0.0.1.tgz"
 		bucketName := "cyderes-development-helm"
 
