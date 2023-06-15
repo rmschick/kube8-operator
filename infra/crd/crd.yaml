@@ -35,7 +35,7 @@ spec:
                       description: Version of the collector
                     configuration:
                       type: string
-                      description: Customer's Base64 Encoded Configuration
+                      description: Collector's Base64 Encoded Configuration
                 # tenant: {id, reference, instance}
                 tenant:
                   type: object

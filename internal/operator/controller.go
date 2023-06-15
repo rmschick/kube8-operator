@@ -47,7 +47,7 @@ const (
 
 // nolint: forcetypeassert, funlen
 func NewController(ctx context.Context, cfg *rest.Config) *Controller {
-	// Create clients for interacting with Kubernetes API and Prometheus Operator API
+	// Create clients for interacting with Kubernetes API
 	kubeClient := kubernetes.NewForConfigOrDie(cfg)
 	apiextensionsClient := apiextensionsclientset.NewForConfigOrDie(cfg)
 	serviceClient := collectorclientset.NewForConfigOrDie(cfg)
@@ -70,7 +70,7 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 		return nil
 	}
 
-	resourceReconciler := CollectorReconciler{
+	reconciler := CollectorReconciler{
 		Client: reconcilerClient,
 		Scheme: scheme,
 	}
@@ -80,7 +80,7 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		// AddFunc is called when a new service is added
 		AddFunc: func(object interface{}) {
-			err = resourceReconciler.CreateOrUpdateCollector(ctx, object.(*v1.Collector), createCollectorFlag)
+			err = reconciler.CreateOrUpdateCollector(ctx, object.(*v1.Collector), createCollectorFlag)
 			if err != nil {
 				klog.Error(err)
 			} else {
@@ -89,16 +89,16 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 		},
 		// UpdateFunc is called when an existing service is updated
 		UpdateFunc: func(oldObject, newObject interface{}) {
-			// Periodic resync will send update events for all known Services.
-			// Two different versions of the same Resource will always have different Generation values. So if they're the same it's just a health check.
+			// Periodic resync will send update events for all known services.
+			// Two different versions of the same Resource will always have different Generation values. So if they're the same there's no changes.
 			if oldObject.(*v1.Collector).Generation == newObject.(*v1.Collector).Generation {
-				klog.Infof("Updated: %v", oldObject.(*v1.Collector).Name)
+				klog.Infof("Synced: %v", oldObject.(*v1.Collector).Name)
 
 				return
 			}
 
 			// If the oldObject is not equal to the newObject, then update the service
-			err := resourceReconciler.CreateOrUpdateCollector(ctx, newObject.(*v1.Collector), updateCollectorFlag)
+			err = reconciler.CreateOrUpdateCollector(ctx, newObject.(*v1.Collector), updateCollectorFlag)
 			if err != nil {
 				klog.Error(err)
 			} else {
@@ -107,7 +107,7 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 		},
 		// DeleteFunc is called when a service is deleted
 		DeleteFunc: func(object interface{}) {
-			err := resourceReconciler.DeleteCollector(ctx, kubeClient, dynamicClient, object.(*v1.Collector))
+			err = reconciler.DeleteCollector(ctx, kubeClient, dynamicClient, object.(*v1.Collector))
 			if err != nil {
 				klog.Error(err)
 			} else {
@@ -138,7 +138,7 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 		workqueue:              controllerWorkerQueue,
 	}
 
-	resourceReconciler.Controller = controller
+	reconciler.Controller = controller
 
 	return controller
 }
@@ -191,6 +191,7 @@ func (c *Controller) SyncHandler(key string) error {
 	return nil
 }
 
+// UpdateStatus updates the status of the Collector resource in the API server
 func (c *Controller) UpdateStatus(ctx context.Context, resource *v1.Collector, status metav1.ConditionStatus, reason string, message string) error {
 	meta.SetStatusCondition(&resource.Status.Conditions, metav1.Condition{Type: typeAvailableCollector, Status: status, Reason: reason, Message: message})
 

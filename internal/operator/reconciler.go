@@ -27,10 +27,7 @@ import (
 )
 
 const (
-	chartPath   = "charts/"
-	githubToken = ""
-	owner       = "FishtechCSOC"
-	// typeAvailableCollector represents the status of the Deployment reconciliation
+	githubToken            = ""
 	typeAvailableCollector = "Available"
 )
 
@@ -73,7 +70,7 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 	// tenant reference is used to set the namespace for the collector
 	tenantNamespace := strings.ToLower(resource.Spec.Tenant.Reference)
 
-	// Create a Helm action configuration
+	// Create a helm configuration
 	setting := cli.New()
 	setting.SetNamespace(tenantNamespace)
 
@@ -83,7 +80,7 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 		return fmt.Errorf("error initializing action config: %w", err)
 	}
 
-	// Create a Helm install action and set up the install configuration
+	// Use config to create a Helm install action and set up the install configuration
 	installAction := action.NewInstall(actionConfig)
 
 	installAction.ReleaseName = resource.Spec.Collector.Name + "-" + resource.Spec.Tenant.Instance
@@ -92,7 +89,7 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 	installAction.IsUpgrade = update
 
 	// Set what collector image to use based on the environment
-	// Because the value file for collectors uses the prod image, we need to change it to the dev image for dev deployments
+	// Because the value file for collectors uses the prod image, we need to change it to the dev container registry path for dev deployments
 	switch resource.Spec.Cluster {
 	case "gke-dev":
 		installAction.Version = "latest"
@@ -114,6 +111,7 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 		}
 	}
 
+	// Update the status of the custom resource to show that the deployment was created/updated successfully
 	err = r.Controller.UpdateStatus(ctx, resource, metav1.ConditionTrue, "Reconciling", fmt.Sprintf("Deployment for custom resource (%s) created/updated successfully", resource.Name))
 	if err != nil {
 		return err
@@ -170,17 +168,17 @@ func getLatestCollectorChartPath(ctx context.Context, resource *v1.Collector) (s
 	// If the environment is production, then the latest release will be the latest release tag
 	switch resource.Spec.Cluster {
 	case "gke-dev":
-		chartName := chartPath + resource.Spec.Collector.Name + "-0.0.1.tgz"
+		chartName := "charts/" + resource.Spec.Collector.Name + "-0.0.1.tgz"
 		bucketName := "cyderes-development-helm"
 
 		return chartName, bucketName, nil
 	default:
-		release, _, err := gitClient.Repositories.GetLatestRelease(ctx, owner, resource.Spec.Collector.Name)
+		release, _, err := gitClient.Repositories.GetLatestRelease(ctx, "FishtechCSOC", resource.Spec.Collector.Name)
 		if err != nil {
 			return "", "", fmt.Errorf("failed to get latest release: %w", err)
 		}
 
-		chartName := chartPath + resource.Spec.Collector.Name + "-" + *release.TagName + ".tgz"
+		chartName := "charts/" + resource.Spec.Collector.Name + "-" + *release.TagName + ".tgz"
 		bucketName := "cyderes-production-helm"
 
 		return chartName, bucketName, nil
