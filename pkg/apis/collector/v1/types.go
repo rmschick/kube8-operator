@@ -46,7 +46,8 @@ type Collector struct {
 
 // CollectorStatus defines the observed state of Collector
 type CollectorStatus struct {
-	Status metav1.Status `json:"status,omitempty"`
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

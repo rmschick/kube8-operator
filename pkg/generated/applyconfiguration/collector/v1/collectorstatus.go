@@ -25,7 +25,7 @@ import (
 // CollectorStatusApplyConfiguration represents an declarative configuration of the CollectorStatus type for use
 // with apply.
 type CollectorStatusApplyConfiguration struct {
-	Status *v1.Status `json:"status,omitempty"`
+	Conditions []v1.Condition `json:"conditions,omitempty"`
 }
 
 // CollectorStatusApplyConfiguration constructs an declarative configuration of the CollectorStatus type for use with
@@ -34,10 +34,12 @@ func CollectorStatus() *CollectorStatusApplyConfiguration {
 	return &CollectorStatusApplyConfiguration{}
 }
 
-// WithStatus sets the Status field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Status field is set to the value of the last call.
-func (b *CollectorStatusApplyConfiguration) WithStatus(value v1.Status) *CollectorStatusApplyConfiguration {
-	b.Status = &value
+// WithConditions adds the given value to the Conditions field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Conditions field.
+func (b *CollectorStatusApplyConfiguration) WithConditions(values ...v1.Condition) *CollectorStatusApplyConfiguration {
+	for i := range values {
+		b.Conditions = append(b.Conditions, values[i])
+	}
 	return b
 }

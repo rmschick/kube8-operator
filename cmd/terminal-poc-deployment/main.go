@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
@@ -12,23 +11,15 @@ import (
 	"github.com/FishtechCSOC/terminal-poc-deployment/internal/operator"
 )
 
-var (
-	masterURL  string
-	kubeconfig string
-)
-
 func main() {
 	ctx := context.Background()
 
-	klog.InitFlags(nil)
-	flag.Parse()
-
-	kubeconfig = "/Users/ryan.schick/.kube/config"
+	kubeconfig := "/Users/ryan.schick/.kube/config"
 
 	// set up signals so we handle the shutdown signal gracefully
 	logger := &logrus.Entry{}
 
-	cfg, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
+	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		logger.Error(err, "Error building kubeconfig")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
@@ -45,9 +36,4 @@ func main() {
 		logger.Error(err, "Error starting controller")
 	}
 
-}
-
-func init() {
-	flag.StringVar(&kubeconfig, "kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-	flag.StringVar(&masterURL, "master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 }

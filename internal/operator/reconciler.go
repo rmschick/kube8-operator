@@ -1,11 +1,10 @@
-package reconciler
+package operator
 
 import (
 	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/FishtechCSOC/common-go/pkg/metrics/instrumentation"
@@ -20,6 +19,9 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	v1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
 )
@@ -28,16 +30,32 @@ const (
 	chartPath   = "charts/"
 	githubToken = ""
 	owner       = "FishtechCSOC"
+	// typeAvailableCollector represents the status of the Deployment reconciliation
+	typeAvailableCollector = "Available"
 )
+
+type CollectorReconciler struct {
+	client.Client
+	Scheme     *runtime.Scheme
+	Controller *Controller
+}
 
 // myDebug is a function that implements the Debug interface for Helm
 func myDebug(format string, v ...interface{}) {
 	fmt.Printf(format, v...)
 }
 
-// CreateCollector creates a Kubernetes deployment in the cluster
-func CreateCollector(resource *v1.Collector) error {
-	tenantNamespace := strings.ToLower(resource.Spec.Tenant.Reference)
+// CreateCollector creates a Kubernetes deployment in the cluster the operator is running on
+func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resource *v1.Collector, update bool) error {
+
+	// set the status as Unknown when no status is available (i.e. first time the resource is created)
+	// this is to prevent the status from being empty and causing errors
+	if resource.Status.Conditions == nil || len(resource.Status.Conditions) == 0 {
+		err := r.Controller.UpdateStatus(ctx, resource, metav1.ConditionUnknown, "Reconciling", "Starting reconciliation")
+		if err != nil {
+			return err
+		}
+	}
 
 	// Get the collector chart from the helm chart bucket in AWS
 	collectorChart, err := getCollectorChart(resource)
@@ -55,6 +73,9 @@ func CreateCollector(resource *v1.Collector) error {
 		return err
 	}
 
+	// tenant reference is used to set the namespace for the collector
+	tenantNamespace := strings.ToLower(resource.Spec.Tenant.Reference)
+
 	// Create a Helm action configuration
 	setting := cli.New()
 	setting.SetNamespace(tenantNamespace)
@@ -66,55 +87,40 @@ func CreateCollector(resource *v1.Collector) error {
 		return err
 	}
 
-	// Create a Helm install action and set the release name and namespace configuration
-	renderAction := action.NewInstall(actionConfig)
-	renderAction.ReleaseName = resource.Spec.Collector.Name + "-" + resource.Spec.Tenant.Instance
-	renderAction.Namespace = tenantNamespace
+	// Create a Helm install action and set up the install configuration
+	installAction := action.NewInstall(actionConfig)
+	installAction.ReleaseName = resource.Spec.Collector.Name + "-" + resource.Spec.Tenant.Instance
+	installAction.Namespace = tenantNamespace
+	installAction.CreateNamespace = true
+	installAction.IsUpgrade = update
 
 	// Set what collector image to use based on the environment
+	// Because the value file for collectors uses the prod image, we need to change it to the dev image for dev deployments
 	switch resource.Spec.Cluster {
 	case "gke-dev":
-		renderAction.Version = "latest"
+		installAction.Version = "latest"
 		collectorChart.Values["image"] = map[string]string{
 			"repository": "us-central1-docker.pkg.dev/cyderes-dev/cyderes-container-repo/" + resource.Spec.Collector.Name,
 		}
 	default:
-		renderAction.Version = resource.Spec.Collector.Version
+		installAction.Version = resource.Spec.Collector.Version
 	}
 
-	collectorChart.Metadata.AppVersion = "latest"
-
-	// Render the template
-	rendered, err := renderAction.Run(collectorChart, vals)
+	// Render the template and install the collector chart
+	_, err = installAction.Run(collectorChart, vals)
 	if err != nil {
-		fmt.Printf("error could not render chart: %v", err)
+		message := fmt.Sprintf("Failed to create/update Deployment for the custom resource (%s): (%s)", resource.Name, err)
 
-		panic(err)
-	}
-
-	// Create a file to write the rendered template to for debugging purposes
-	file, err := os.Create("rendered_template.yaml")
-	if err != nil {
-		fmt.Printf("error could not render chart: %v", err)
-
-		panic(err)
-	}
-	defer func(file *os.File) {
-		err := file.Close()
+		err := r.Controller.UpdateStatus(ctx, resource, metav1.ConditionFalse, "Reconciling", message)
 		if err != nil {
-			fmt.Printf("error could not render chart: %v", err)
-			os.Exit(1)
+			return err
 		}
-	}(file)
-
-	// Writing the contents of the rendered chart configuration
-	if _, err := file.WriteString(rendered.Manifest); err != nil {
-		fmt.Println(err)
-
-		panic(err)
 	}
 
-	fmt.Println("\nRendered template written to file.")
+	err = r.Controller.UpdateStatus(ctx, resource, metav1.ConditionTrue, "Reconciling", fmt.Sprintf("Deployment for custom resource (%s) created/updated successfully", resource.Name))
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -151,6 +157,8 @@ func getCollectorChart(resource *v1.Collector) (*chart.Chart, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	collectorChart.Metadata.AppVersion = "latest"
 
 	return collectorChart, nil
 }

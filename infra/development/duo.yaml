@@ -1,0 +1,19 @@
+# This file is just here so I can easily get the base64 encoded values
+# Used for the configuration field in the resource when I update configuration to test updates
+environment: "development"
+cluster: "gke-dev"
+
+cms:
+  metadata:
+    customer:
+      id: c6d22e04-5010-4500-a2ea-02c480ae2794
+      name: cyderes
+    tenant:
+      id: eb844545-426a-4fc2-836a-2d99d2626c72
+      reference: CYENGDEV
+
+configuration:
+  duo:
+    integrationKey: DIT7LTK6J1UI0DS8ZNWK
+    host: api-1e3b6f24.duosecurity.com
+    secretKey: bEeQnNNjD83dF6BtygBDTnbN1nG1vASiL49tvD5f

@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
@@ -18,9 +21,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/FishtechCSOC/terminal-poc-deployment/internal/reconciler"
-	collectorv1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
+	v1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
 	collectorclientset "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned"
 	collectorscheme "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/scheme"
 	collectorinformers "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/informers/externalversions"
@@ -30,12 +33,17 @@ import (
 type Controller struct {
 	kubeclientset          kubernetes.Interface
 	apiextensionsclientset apiextensionsclientset.Interface
-	testresourceclientset  collectorclientset.Interface
+	resourceclientset      collectorclientset.Interface
 	informer               cache.SharedIndexInformer
 	lister                 collectorlister.CollectorLister
 	recorder               record.EventRecorder
 	workqueue              workqueue.RateLimitingInterface
 }
+
+const (
+	createCollectorFlag = false
+	updateCollectorFlag = true
+)
 
 func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 	// Create clients for interacting with Kubernetes API and Prometheus Operator API
@@ -48,51 +56,67 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 	informerFactory := collectorinformers.NewSharedInformerFactory(serviceClient, time.Minute*1)
 	informer := informerFactory.Example().V1().Collectors()
 
+	// Add necessary schemes for custom resources
+	scheme := runtime.NewScheme()
+	utilruntime.Must(collectorscheme.AddToScheme(scheme))
+
+	reconcilerClient, err := client.New(cfg, client.Options{
+		Scheme: scheme,
+	})
+	if err != nil {
+		klog.Error(err)
+
+		return nil
+	}
+
+	resourceReconciler := CollectorReconciler{
+		Client: reconcilerClient,
+		Scheme: scheme,
+	}
+
 	// Add event handlers for the informer
 	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+
 		// AddFunc is called when a new service is added
 		AddFunc: func(object interface{}) {
-			err := reconciler.CreateCollector(object.(*collectorv1.Collector).DeepCopy())
+			err := resourceReconciler.CreateOrUpdateCollector(ctx, object.(*v1.Collector), createCollectorFlag)
 			if err != nil {
 				klog.Error(err)
+			} else {
+				klog.Infof("Added: %v", object.(*v1.Collector).Name)
 			}
-
-			klog.Infof("Added: %v", object.(*collectorv1.Collector).Name)
 		},
 		// UpdateFunc is called when an existing service is updated
 		UpdateFunc: func(oldObject, newObject interface{}) {
-
 			// Periodic resync will send update events for all known Services.
-			if oldObject.(*collectorv1.Collector).Generation == newObject.(*collectorv1.Collector).Generation {
-				klog.Infof("Synced")
+			// Two different versions of the same Resource will always have different Generation values. So if they're the same it's just a health check.
+			if oldObject.(*v1.Collector).Generation == newObject.(*v1.Collector).Generation {
+				klog.Infof("Updated: %v", oldObject.(*v1.Collector).Name)
 
 				return
 			}
 
 			// If the oldObject is not equal to the newObject, then update the service
-			err := reconciler.UpdateCollector(ctx, kubeClient, newObject.(*collectorv1.Collector).DeepCopy())
+			err := resourceReconciler.CreateOrUpdateCollector(ctx, newObject.(*v1.Collector), updateCollectorFlag)
 			if err != nil {
 				klog.Error(err)
+			} else {
+				klog.Infof("Updated: %v", newObject.(*v1.Collector).Name)
 			}
-
-			klog.Infof("Updated: %v", newObject.(*collectorv1.Collector).Name)
 		},
 		// DeleteFunc is called when a service is deleted
 		DeleteFunc: func(object interface{}) {
-			err := reconciler.DeleteCollector(ctx, kubeClient, dynamicClient, object.(*collectorv1.Collector).DeepCopy())
+			err := resourceReconciler.DeleteCollector(ctx, kubeClient, dynamicClient, object.(*v1.Collector))
 			if err != nil {
 				klog.Error(err)
+			} else {
+				klog.Infof("Deleted: %v", object.(*v1.Collector).Name)
 			}
-
-			klog.Infof("Deleted: %v", object.(*collectorv1.Collector).Name)
 		},
 	})
 
 	// Start the informer factory to begin receiving events
 	informerFactory.Start(wait.NeverStop)
-
-	// Add necessary schemes for custom resources
-	utilruntime.Must(collectorv1.AddToScheme(collectorscheme.Scheme))
 
 	// Create an event broadcaster to record events related to the controller
 	eventBroadcaster := record.NewBroadcaster()
@@ -103,15 +127,19 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 	// Create a work queue for handling events
 	controllerWorkerQueue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
-	return &Controller{
+	controller := &Controller{
 		kubeclientset:          kubeClient,
 		apiextensionsclientset: apiextensionsClient,
-		testresourceclientset:  serviceClient,
+		resourceclientset:      serviceClient,
 		informer:               informer.Informer(),
 		lister:                 informer.Lister(),
 		recorder:               recorder,
 		workqueue:              controllerWorkerQueue,
 	}
+
+	resourceReconciler.Controller = controller
+
+	return controller
 }
 
 func (c *Controller) Start(stopCh <-chan struct{}) error {
@@ -155,19 +183,26 @@ func (c *Controller) RunWorker() {
 // converge the two. It then updates the Status block of the Sample resource
 // with the current status of the resource.
 func (c *Controller) SyncHandler(key string) error {
-	klog.Infof("Processing change to Pod %s", key)
-
-	_, exists, err := c.informer.GetIndexer().GetByKey(key)
-	if err != nil {
-		return fmt.Errorf("error fetching object with key %s from store: %v", key, err)
-	}
-
-	if !exists {
-		return nil
-	}
-
-	// maybe do something here to sync ??
-
+	// this is mostly taken from the sample-controller that I'm not using
 	klog.Info("syncHandler finished")
+	return nil
+}
+
+func (c *Controller) UpdateStatus(ctx context.Context, resource *v1.Collector, status metav1.ConditionStatus, reason string, message string) error {
+	meta.SetStatusCondition(&resource.Status.Conditions, metav1.Condition{Type: typeAvailableCollector, Status: status, Reason: reason, Message: message})
+
+	// Update the Collector resource
+	_, err := c.resourceclientset.ExampleV1().Collectors(resource.Namespace).Update(ctx, resource, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to update Collector status: %v", err)
+	}
+
+	// Retrieve the updated Collector resource so that we have the most recent version and UID
+	// Otherwise, the next time we try to update the status, we will get a conflict error
+	_, err = c.resourceclientset.ExampleV1().Collectors(resource.Namespace).Get(ctx, resource.Name, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get updated resource Collector: %v", err)
+	}
+
 	return nil
 }

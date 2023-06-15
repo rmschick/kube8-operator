@@ -1,3 +1,5 @@
+# This file is just here so I can easily get the base64 encoded values
+# Used for the configuration field in the resource when I update configuration to test updates
 environment: "development"
 cluster: "gke-dev"
 
