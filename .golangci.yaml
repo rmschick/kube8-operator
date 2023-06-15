@@ -36,6 +36,7 @@ linters:
   disable:
     - goerr113
     - lll
+    - godot
     - nolintlint
     - typecheck
     - wrapcheck
