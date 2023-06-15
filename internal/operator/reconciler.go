@@ -41,13 +41,14 @@ type CollectorReconciler struct {
 }
 
 // myDebug is a function that implements the Debug interface for Helm
+// nolint: forbidigo, goprintffuncname
 func myDebug(format string, v ...interface{}) {
 	fmt.Printf(format, v...)
 }
 
 // CreateCollector creates a Kubernetes deployment in the cluster the operator is running on
+// nolint: gocyclo, cyclop
 func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resource *v1.Collector, update bool) error {
-
 	// set the status as Unknown when no status is available (i.e. first time the resource is created)
 	// this is to prevent the status from being empty and causing errors
 	if resource.Status.Conditions == nil || len(resource.Status.Conditions) == 0 {
@@ -58,19 +59,15 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 	}
 
 	// Get the collector chart from the helm chart bucket in AWS
-	collectorChart, err := getCollectorChart(resource)
+	collectorChart, err := getCollectorChart(ctx, resource)
 	if err != nil {
-		fmt.Printf("could not get collector chart: %v", err)
-
-		return err
+		return fmt.Errorf("could not get collector chart: %w", err)
 	}
 
 	// Unmarshal the values file to use for the helm chart
 	vals, err := getValues(resource.Spec.Collector.Configuration)
 	if err != nil {
-		fmt.Printf("could not unmarshal values file: %v", err)
-
-		return err
+		return fmt.Errorf("could not unmarshal values file: %w", err)
 	}
 
 	// tenant reference is used to set the namespace for the collector
@@ -79,16 +76,16 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 	// Create a Helm action configuration
 	setting := cli.New()
 	setting.SetNamespace(tenantNamespace)
+
 	actionConfig := new(action.Configuration)
 
-	if err := actionConfig.Init(setting.RESTClientGetter(), setting.Namespace(), "memory", myDebug); err != nil {
-		fmt.Printf("Error initializing action config: %v", err)
-
-		return err
+	if err = actionConfig.Init(setting.RESTClientGetter(), setting.Namespace(), "memory", myDebug); err != nil {
+		return fmt.Errorf("error initializing action config: %w", err)
 	}
 
 	// Create a Helm install action and set up the install configuration
 	installAction := action.NewInstall(actionConfig)
+
 	installAction.ReleaseName = resource.Spec.Collector.Name + "-" + resource.Spec.Tenant.Instance
 	installAction.Namespace = tenantNamespace
 	installAction.CreateNamespace = true
@@ -111,7 +108,7 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 	if err != nil {
 		message := fmt.Sprintf("Failed to create/update Deployment for the custom resource (%s): (%s)", resource.Name, err)
 
-		err := r.Controller.UpdateStatus(ctx, resource, metav1.ConditionFalse, "Reconciling", message)
+		err = r.Controller.UpdateStatus(ctx, resource, metav1.ConditionFalse, "Reconciling", message)
 		if err != nil {
 			return err
 		}
@@ -126,9 +123,7 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 }
 
 // getCollectorChart retrieves the collector chart from the helm chart bucket in AWS
-func getCollectorChart(resource *v1.Collector) (*chart.Chart, error) {
-	ctx := context.Background()
-
+func getCollectorChart(ctx context.Context, resource *v1.Collector) (*chart.Chart, error) {
 	awsCreds := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider("AKIAYEFJN5H3DMBXIYMU", "T6RtFrub14LlXKR+KO6YbouWdrgEqQ7pyt0o5x1A", ""))
 
 	awsConfig, err := config.LoadDefaultConfig(ctx, config.WithCredentialsProvider(awsCreds), config.WithRegion("us-west-2"), config.WithHTTPClient(instrumentation.InstrumentHTTPClient(&http.Client{})))
@@ -182,9 +177,7 @@ func getLatestCollectorChartPath(ctx context.Context, resource *v1.Collector) (s
 	default:
 		release, _, err := gitClient.Repositories.GetLatestRelease(ctx, owner, resource.Spec.Collector.Name)
 		if err != nil {
-			fmt.Printf("Failed to get latest release: %v", err)
-
-			return "", "", err
+			return "", "", fmt.Errorf("failed to get latest release: %w", err)
 		}
 
 		chartName := chartPath + resource.Spec.Collector.Name + "-" + *release.TagName + ".tgz"
@@ -204,6 +197,7 @@ func getValues(configuration string) (map[string]interface{}, error) {
 
 	// Unmarshal the YAML into a map
 	vals := map[string]interface{}{}
+
 	err = yaml.Unmarshal(decodedYAML, &vals)
 	if err != nil {
 		return nil, err

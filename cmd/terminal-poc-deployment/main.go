@@ -2,11 +2,10 @@ package main
 
 import (
 	"context"
+
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/FishtechCSOC/terminal-poc-deployment/internal/operator"
 )
@@ -35,5 +34,4 @@ func main() {
 	if err != nil {
 		logger.Error(err, "Error starting controller")
 	}
-
 }

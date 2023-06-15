@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -45,6 +45,7 @@ const (
 	updateCollectorFlag = true
 )
 
+// nolint: forcetypeassert, funlen
 func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 	// Create clients for interacting with Kubernetes API and Prometheus Operator API
 	kubeClient := kubernetes.NewForConfigOrDie(cfg)
@@ -75,11 +76,11 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 	}
 
 	// Add event handlers for the informer
+	// nolint: errcheck
 	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-
 		// AddFunc is called when a new service is added
 		AddFunc: func(object interface{}) {
-			err := resourceReconciler.CreateOrUpdateCollector(ctx, object.(*v1.Collector), createCollectorFlag)
+			err = resourceReconciler.CreateOrUpdateCollector(ctx, object.(*v1.Collector), createCollectorFlag)
 			if err != nil {
 				klog.Error(err)
 			} else {
@@ -160,10 +161,11 @@ func (c *Controller) Start(stopCh <-chan struct{}) error {
 	return nil
 }
 
+// nolint: forcetypeassert
 func (c *Controller) RunWorker() {
 	for {
 		obj, shutdown := c.workqueue.Get()
-		if shutdown != false {
+		if shutdown {
 			return
 		}
 
@@ -185,6 +187,7 @@ func (c *Controller) RunWorker() {
 func (c *Controller) SyncHandler(key string) error {
 	// this is mostly taken from the sample-controller that I'm not using
 	klog.Info("syncHandler finished")
+
 	return nil
 }
 
@@ -194,14 +197,14 @@ func (c *Controller) UpdateStatus(ctx context.Context, resource *v1.Collector, s
 	// Update the Collector resource
 	_, err := c.resourceclientset.ExampleV1().Collectors(resource.Namespace).Update(ctx, resource, metav1.UpdateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to update Collector status: %v", err)
+		return fmt.Errorf("failed to update Collector status: %w", err)
 	}
 
 	// Retrieve the updated Collector resource so that we have the most recent version and UID
 	// Otherwise, the next time we try to update the status, we will get a conflict error
 	_, err = c.resourceclientset.ExampleV1().Collectors(resource.Namespace).Get(ctx, resource.Name, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to get updated resource Collector: %v", err)
+		return fmt.Errorf("failed to get updated resource Collector: %w", err)
 	}
 
 	return nil
