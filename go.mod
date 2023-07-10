@@ -9,14 +9,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.24
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.33.1
 	github.com/google/go-github/v52 v52.0.0
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.65.2
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/oauth2 v0.8.0
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.12.0
-	k8s.io/api v0.27.2
+	k8s.io/api v0.27.3
 	k8s.io/apiextensions-apiserver v0.27.2
-	k8s.io/apimachinery v0.27.2
+	k8s.io/apimachinery v0.27.3
 	k8s.io/client-go v0.27.2
 	k8s.io/code-generator v0.27.2
 	k8s.io/klog/v2 v2.100.1
