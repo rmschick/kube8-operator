@@ -1,0 +1,63 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: collectors.example.com
+spec:
+  group: example.com
+  scope: Namespaced
+  names:
+    plural: collectors
+    singular: collector
+    kind: Collector
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        # schema used for validation
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                # collector: {name, version, configuration}
+                collector:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: Name of the collector
+                    version:
+                      type: string
+                      description: Version of the collector
+                    configuration:
+                      type: string
+                      description: Collector's Base64 Encoded Configuration
+                # tenant: {id, reference, instance}
+                tenant:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: Tenant ID of the customer being deployed
+                    reference:
+                      type: string
+                      description: Ref of the tenant
+                    instance:
+                      type: string
+                      description: Instance of the tenant this collector is deployed for
+                # cluster will define the environment (gke-dev, gke-prod, etc)
+                cluster:
+                  type: string
+                  description: cluster
+          required:
+            - metadata
+            - spec
+      # subresources for the custom resource
+      # https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources
+      subresources:
+      # enables the status subresource
+        status: {}

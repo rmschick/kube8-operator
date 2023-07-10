@@ -1,4 +1,4 @@
-project_name: locomotive-collector-template
+project_name: terminal-poc-deployment
 env:
   - LABEL_DOMAIN=cyderes.fishtech.group
   - CGO_ENABLED=0
@@ -47,5 +47,5 @@ changelog:
 release:
   github:
     owner: FishtechCSOC
-    name: locomotive-collector-template
+    name: terminal-poc-deployment
   prerelease: auto
