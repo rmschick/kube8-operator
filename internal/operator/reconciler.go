@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	githubToken            = ""
+	githubToken            = "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"
 	typeAvailableCollector = "Available"
 )
 
@@ -43,7 +43,7 @@ func myDebug(format string, v ...interface{}) {
 	fmt.Printf(format, v...)
 }
 
-// CreateCollector creates a Kubernetes deployment in the cluster the operator is running on
+// CreateOrUpdateCollector creates or updates a Kubernetes deployment in the cluster the operator is running on
 // nolint: gocyclo, cyclop
 func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resource *v1.Collector, update bool) error {
 	// set the status as Unknown when no status is available (i.e. first time the resource is created)
