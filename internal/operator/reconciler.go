@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	githubToken            = "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"
+	githubToken            = ""
 	typeAvailableCollector = "Available"
 )
 
@@ -122,7 +122,7 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 
 // getCollectorChart retrieves the collector chart from the helm chart bucket in AWS
 func getCollectorChart(ctx context.Context, resource *v1.Collector) (*chart.Chart, error) {
-	awsCreds := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider("AKIAYEFJN5H3DMBXIYMU", "T6RtFrub14LlXKR+KO6YbouWdrgEqQ7pyt0o5x1A", ""))
+	awsCreds := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider("", "", ""))
 
 	awsConfig, err := config.LoadDefaultConfig(ctx, config.WithCredentialsProvider(awsCreds), config.WithRegion("us-west-2"), config.WithHTTPClient(instrumentation.InstrumentHTTPClient(&http.Client{})))
 	if err != nil {
