@@ -22,7 +22,7 @@ tidy:
 .PHONY: tidy
 
 lint:
-	golangci-lint run --timeout=5m --out-format junit-xml:lint-junit.xml,colored-line-number:stdout
+	golangci-lint run --timeout=5m
 .PHONY: lint
 
 test:
