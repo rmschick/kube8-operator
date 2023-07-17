@@ -25,7 +25,11 @@ func main() {
 	}
 
 	// Set up a new controller object.
-	ctrl := operator.NewController(ctx, cfg)
+	ctrl, err := operator.NewController(ctx, cfg)
+	if err != nil {
+		logger.Error(err, "Error creating controller")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
 
 	// Set up channels for stopping the controller.
 	stop := make(chan struct{})
