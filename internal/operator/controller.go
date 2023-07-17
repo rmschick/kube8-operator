@@ -2,8 +2,8 @@ package operator
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -46,7 +46,7 @@ const (
 )
 
 // nolint: forcetypeassert, funlen
-func NewController(ctx context.Context, cfg *rest.Config) *Controller {
+func NewController(ctx context.Context, cfg *rest.Config) (*Controller, error) {
 	// Create clients for interacting with Kubernetes API
 	kubeClient := kubernetes.NewForConfigOrDie(cfg)
 	apiextensionsClient := apiextensionsclientset.NewForConfigOrDie(cfg)
@@ -54,7 +54,7 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 	dynamicClient := dynamic.NewForConfigOrDie(cfg)
 
 	// Create informer factory to receive notifications about changes to services
-	informerFactory := collectorinformers.NewSharedInformerFactory(serviceClient, time.Minute*1)
+	informerFactory := collectorinformers.NewSharedInformerFactory(serviceClient, time.Second*30)
 	informer := informerFactory.Example().V1().Collectors()
 
 	// Add necessary schemes for custom resources
@@ -65,9 +65,7 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 		Scheme: scheme,
 	})
 	if err != nil {
-		klog.Error(err)
-
-		return nil
+		return nil, err
 	}
 
 	reconciler := CollectorReconciler{
@@ -77,7 +75,7 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 
 	// Add event handlers for the informer
 	// nolint: errcheck
-	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		// AddFunc is called when a new service is added
 		AddFunc: func(object interface{}) {
 			err = reconciler.CreateOrUpdateCollector(ctx, object.(*v1.Collector), createCollectorFlag)
@@ -115,6 +113,9 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 			}
 		},
 	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to add event handlers to informer")
+	}
 
 	// Start the informer factory to begin receiving events
 	informerFactory.Start(wait.NeverStop)
@@ -140,7 +141,7 @@ func NewController(ctx context.Context, cfg *rest.Config) *Controller {
 
 	reconciler.Controller = controller
 
-	return controller
+	return controller, nil
 }
 
 func (c *Controller) Start(stopCh <-chan struct{}) error {
@@ -161,34 +162,13 @@ func (c *Controller) Start(stopCh <-chan struct{}) error {
 	return nil
 }
 
-// nolint: forcetypeassert
 func (c *Controller) RunWorker() {
 	for {
-		obj, shutdown := c.workqueue.Get()
+		_, shutdown := c.workqueue.Get()
 		if shutdown {
 			return
 		}
-
-		key := obj.(string)
-		if err := c.SyncHandler(key); err != nil {
-			klog.Errorf("failed to sync object %s: %v", key, err)
-			c.workqueue.Add(key)
-
-			continue
-		}
-
-		c.workqueue.Forget(obj)
 	}
-}
-
-// SyncHandler compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the Sample resource
-// with the current status of the resource.
-func (c *Controller) SyncHandler(key string) error {
-	// this is mostly taken from the sample-controller that I'm not using
-	klog.Info("syncHandler finished")
-
-	return nil
 }
 
 // UpdateStatus updates the status of the Collector resource in the API server
