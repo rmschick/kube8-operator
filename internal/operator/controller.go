@@ -3,9 +3,9 @@ package operator
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"time"
 
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -43,6 +43,7 @@ type Controller struct {
 const (
 	createCollectorFlag = false
 	updateCollectorFlag = true
+	resyncePeriod       = 5 * time.Minute
 )
 
 // nolint: forcetypeassert, funlen
@@ -54,7 +55,7 @@ func NewController(ctx context.Context, cfg *rest.Config) (*Controller, error) {
 	dynamicClient := dynamic.NewForConfigOrDie(cfg)
 
 	// Create informer factory to receive notifications about changes to services
-	informerFactory := collectorinformers.NewSharedInformerFactory(serviceClient, time.Second*30)
+	informerFactory := collectorinformers.NewSharedInformerFactory(serviceClient, resyncePeriod)
 	informer := informerFactory.Example().V1().Collectors()
 
 	// Add necessary schemes for custom resources
