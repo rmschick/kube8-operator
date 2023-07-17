@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.24
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.33.1
 	github.com/google/go-github/v52 v52.0.0
+	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/oauth2 v0.8.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -16,7 +17,7 @@ require (
 	k8s.io/api v0.27.3
 	k8s.io/apiextensions-apiserver v0.27.2
 	k8s.io/apimachinery v0.27.3
-	k8s.io/client-go v0.27.2
+	k8s.io/client-go v0.27.3
 	k8s.io/code-generator v0.27.2
 	k8s.io/klog/v2 v2.100.1
 	sigs.k8s.io/controller-runtime v0.14.6
@@ -131,7 +132,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc3 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.15.1 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
