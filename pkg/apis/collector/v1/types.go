@@ -26,15 +26,22 @@ type TenantInfo struct {
 	Instance  string `json:"instance"`
 }
 
+// CollectorSpec defines the desired state of Collector
 type CollectorSpec struct {
 	Collector CollectorInfo `json:"collector"`
 	Tenant    TenantInfo    `json:"tenant"`
 	Cluster   string        `json:"cluster"`
 }
 
+// CollectorStatus defines the observed state of Collector
+type CollectorStatus struct {
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+}
+
 // +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type Collector struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -44,18 +51,12 @@ type Collector struct {
 	Status CollectorStatus `json:"status,omitempty"`
 }
 
-// CollectorStatus defines the observed state of Collector
-type CollectorStatus struct {
-	// +operator-sdk:csv:customresourcedefinitions:type=status
-	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-}
-
+//+kubebuilder:object:root=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CollectorList is a list of Collector resources
 type CollectorList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-
-	Items []Collector `json:"items"`
+	Items           []Collector `json:"items"`
 }

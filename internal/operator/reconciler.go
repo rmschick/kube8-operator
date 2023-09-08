@@ -46,10 +46,11 @@ func myDebug(format string, v ...interface{}) {
 // CreateOrUpdateCollector creates or updates a Kubernetes deployment in the cluster the operator is running on
 // nolint: gocyclo, cyclop
 func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resource *v1.Collector, update bool) error {
+	var err error
 	// set the status as Unknown when no status is available (i.e. first time the resource is created)
 	// this is to prevent the status from being empty and causing errors
 	if resource.Status.Conditions == nil || len(resource.Status.Conditions) == 0 {
-		err := r.Controller.UpdateStatus(ctx, resource, metav1.ConditionUnknown, "Reconciling", "Starting reconciliation")
+		resource, err = r.Controller.UpdateStatus(ctx, resource, metav1.ConditionUnknown, "Reconciling", "Starting reconciliation")
 		if err != nil {
 			return err
 		}
@@ -105,14 +106,14 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 	if err != nil {
 		message := fmt.Sprintf("Failed to create/update Deployment for the custom resource (%s): (%s)", resource.Name, err)
 
-		err = r.Controller.UpdateStatus(ctx, resource, metav1.ConditionFalse, "Reconciling", message)
+		resource, err = r.Controller.UpdateStatus(ctx, resource, metav1.ConditionFalse, "Reconciling", message)
 		if err != nil {
 			return err
 		}
 	}
 
 	// Update the status of the custom resource to show that the deployment was created/updated successfully
-	err = r.Controller.UpdateStatus(ctx, resource, metav1.ConditionTrue, "Reconciling", fmt.Sprintf("Deployment for custom resource (%s) created/updated successfully", resource.Name))
+	resource, err = r.Controller.UpdateStatus(ctx, resource, metav1.ConditionTrue, "Reconciling", fmt.Sprintf("Deployment for custom resource (%s) created/updated successfully", resource.Name))
 	if err != nil {
 		return err
 	}

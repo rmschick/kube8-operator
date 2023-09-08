@@ -3,12 +3,12 @@ package operator
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -173,21 +173,28 @@ func (c *Controller) RunWorker() {
 }
 
 // UpdateStatus updates the status of the Collector resource in the API server
-func (c *Controller) UpdateStatus(ctx context.Context, resource *v1.Collector, status metav1.ConditionStatus, reason string, message string) error {
-	meta.SetStatusCondition(&resource.Status.Conditions, metav1.Condition{Type: typeAvailableCollector, Status: status, Reason: reason, Message: message})
+func (c *Controller) UpdateStatus(ctx context.Context, resource *v1.Collector, status metav1.ConditionStatus, reason string, message string) (*v1.Collector, error) {
+	// Retrieve the updated Collector resource so that we have the most recent version and UID
+	// Otherwise, the next time we try to update the status, we will get a conflict error
+	currentCollector, err := c.resourceclientset.ExampleV1().Collectors(resource.Namespace).Get(ctx, resource.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get updated resource Collector: %w", err)
+	}
+
+	meta.SetStatusCondition(&currentCollector.Status.Conditions, metav1.Condition{Type: typeAvailableCollector, Status: status, Reason: reason, Message: message})
 
 	// Update the Collector resource
-	_, err := c.resourceclientset.ExampleV1().Collectors(resource.Namespace).Update(ctx, resource, metav1.UpdateOptions{})
+	updatedCollector, err := c.resourceclientset.ExampleV1().Collectors(currentCollector.Namespace).UpdateStatus(ctx, currentCollector, metav1.UpdateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to update Collector status: %w", err)
+		return nil, fmt.Errorf("failed to update Collector status: %w", err)
 	}
 
 	// Retrieve the updated Collector resource so that we have the most recent version and UID
 	// Otherwise, the next time we try to update the status, we will get a conflict error
-	_, err = c.resourceclientset.ExampleV1().Collectors(resource.Namespace).Get(ctx, resource.Name, metav1.GetOptions{})
+	updatedCollector, err = c.resourceclientset.ExampleV1().Collectors(updatedCollector.Namespace).Get(ctx, updatedCollector.Name, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to get updated resource Collector: %w", err)
+		return nil, fmt.Errorf("failed to get updated resource Collector: %w", err)
 	}
 
-	return nil
+	return updatedCollector, nil
 }

@@ -12,6 +12,7 @@ GROUPS_VERSIONS="collector:v1"
 OUTPUT_BASE="."
 GO_HEADER_FILE="./hack/boilerplate.go.txt"
 
+chmod +x ${CODEGEN_SCRIPT}
 "${CODEGEN_SCRIPT}" "${GENERATORS}" "${OUTPUT_PACKAGE}" "${APIS_PACKAGE}" "${GROUPS_VERSIONS}" \
   --output-base "${OUTPUT_BASE}" \
   --go-header-file "${GO_HEADER_FILE}"
