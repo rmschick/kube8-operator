@@ -2,19 +2,16 @@ package operator
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/FishtechCSOC/common-go/pkg/metrics/instrumentation"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/go-github/v52/github"
 	"golang.org/x/oauth2"
-	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -23,7 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
+	"kube8-operator/internal/instrumentation"
+	v1 "kube8-operator/pkg/apis/collector/v1alpha"
 )
 
 const (
@@ -38,7 +36,6 @@ type CollectorReconciler struct {
 }
 
 // myDebug is a function that implements the Debug interface for Helm
-// nolint: forbidigo, goprintffuncname
 func myDebug(format string, v ...interface{}) {
 	fmt.Printf(format, v...)
 }
@@ -88,17 +85,9 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 	installAction.Namespace = tenantNamespace
 	installAction.CreateNamespace = true
 	installAction.IsUpgrade = update
-
-	// Set what collector image to use based on the environment
-	// Because the value file for collectors uses the prod image, we need to change it to the dev container registry path for dev deployments
-	switch resource.Spec.Cluster {
-	case "gke-dev":
-		installAction.Version = "latest"
-		collectorChart.Values["image"] = map[string]string{
-			"repository": "us-central1-docker.pkg.dev/cyderes-dev/cyderes-container-repo/" + resource.Spec.Collector.Name,
-		}
-	default:
-		installAction.Version = resource.Spec.Collector.Version
+	installAction.Version = "latest"
+	collectorChart.Values["image"] = map[string]string{
+		"repository": "us-central1-docker.pkg.dev/ryanschick/ryanschick-container-repo/" + resource.Spec.Collector.Name,
 	}
 
 	// Render the template and install the collector chart
@@ -168,39 +157,20 @@ func getLatestCollectorChartPath(ctx context.Context, resource *v1.Collector) (s
 	// Get the latest release for the collector chart based on the environment
 	// If the environment is production, then the latest release will be the latest release tag
 	switch resource.Spec.Cluster {
-	case "gke-dev":
+	case "development":
 		chartName := "charts/" + resource.Spec.Collector.Name + "-0.0.1.tgz"
-		bucketName := "cyderes-development-helm"
+		bucketName := "development-helm"
 
 		return chartName, bucketName, nil
 	default:
-		release, _, err := gitClient.Repositories.GetLatestRelease(ctx, "FishtechCSOC", resource.Spec.Collector.Name)
+		release, _, err := gitClient.Repositories.GetLatestRelease(ctx, "rmschick", resource.Spec.Collector.Name)
 		if err != nil {
 			return "", "", fmt.Errorf("failed to get latest release: %w", err)
 		}
 
 		chartName := "charts/" + resource.Spec.Collector.Name + "-" + *release.TagName + ".tgz"
-		bucketName := "cyderes-production-helm"
+		bucketName := "production-helm"
 
 		return chartName, bucketName, nil
 	}
-}
-
-// getValues unmarshals the base64 encoded YAML string into a map
-func getValues(configuration string) (map[string]interface{}, error) {
-	// Decode the base64 encoded YAML string
-	decodedYAML, err := base64.StdEncoding.DecodeString(configuration)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal the YAML into a map
-	vals := map[string]interface{}{}
-
-	err = yaml.Unmarshal(decodedYAML, &vals)
-	if err != nil {
-		return nil, err
-	}
-
-	return vals, nil
 }

@@ -19,13 +19,13 @@ limitations under the License.
 package externalversions
 
 import (
+	versioned "kube8-operator/pkg/generated/clientset/versioned"
+	collector "kube8-operator/pkg/generated/informers/externalversions/collector"
+	internalinterfaces "kube8-operator/pkg/generated/informers/externalversions/internalinterfaces"
 	reflect "reflect"
 	sync "sync"
 	time "time"
 
-	versioned "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned"
-	collector "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/informers/externalversions/collector"
-	internalinterfaces "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

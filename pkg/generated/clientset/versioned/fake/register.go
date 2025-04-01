@@ -19,7 +19,8 @@ limitations under the License.
 package fake
 
 import (
-	examplev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
+	examplev1alpha "kube8-operator/pkg/apis/collector/v1alpha"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -31,7 +32,7 @@ var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
 
 var localSchemeBuilder = runtime.SchemeBuilder{
-	examplev1.AddToScheme,
+	examplev1alpha.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

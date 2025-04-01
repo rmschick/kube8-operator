@@ -19,8 +19,9 @@ limitations under the License.
 package applyconfiguration
 
 import (
-	v1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
-	collectorv1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/applyconfiguration/collector/v1"
+	v1alpha "kube8-operator/pkg/apis/collector/v1alpha"
+	collectorv1alpha "kube8-operator/pkg/generated/applyconfiguration/collector/v1alpha"
+
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -28,17 +29,17 @@ import (
 // apply configuration type exists for the given GroupVersionKind.
 func ForKind(kind schema.GroupVersionKind) interface{} {
 	switch kind {
-	// Group=example.com, Version=v1
-	case v1.SchemeGroupVersion.WithKind("Collector"):
-		return &collectorv1.CollectorApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("CollectorInfo"):
-		return &collectorv1.CollectorInfoApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("CollectorSpec"):
-		return &collectorv1.CollectorSpecApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("CollectorStatus"):
-		return &collectorv1.CollectorStatusApplyConfiguration{}
-	case v1.SchemeGroupVersion.WithKind("TenantInfo"):
-		return &collectorv1.TenantInfoApplyConfiguration{}
+	// Group=example.com, Version=v1alpha
+	case v1alpha.SchemeGroupVersion.WithKind("Collector"):
+		return &collectorv1alpha.CollectorApplyConfiguration{}
+	case v1alpha.SchemeGroupVersion.WithKind("CollectorInfo"):
+		return &collectorv1alpha.CollectorInfoApplyConfiguration{}
+	case v1alpha.SchemeGroupVersion.WithKind("CollectorSpec"):
+		return &collectorv1alpha.CollectorSpecApplyConfiguration{}
+	case v1alpha.SchemeGroupVersion.WithKind("CollectorStatus"):
+		return &collectorv1alpha.CollectorStatusApplyConfiguration{}
+	case v1alpha.SchemeGroupVersion.WithKind("TenantInfo"):
+		return &collectorv1alpha.TenantInfoApplyConfiguration{}
 
 	}
 	return nil

@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 
-	v1Controller "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
+	v1Controller "kube8-operator/pkg/apis/collector/v1alpha"
 )
 
 // DeleteCollector deletes a collector deployment, service, serviceMonitor, and secret
@@ -41,7 +41,7 @@ func (r *CollectorReconciler) DeleteCollector(ctx context.Context, clientset *ku
 	err = dynamicClient.Resource(
 		schema.GroupVersionResource{
 			Group:    "monitoring.coreos.com",
-			Version:  "v1",
+			Version:  "v1alpha",
 			Resource: "servicemonitors",
 		}).Namespace(resource.Namespace).Delete(ctx, releaseName, metav1.DeleteOptions{})
 	if err != nil {

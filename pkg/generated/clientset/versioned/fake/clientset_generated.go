@@ -19,9 +19,10 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned"
-	examplev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/typed/collector/v1"
-	fakeexamplev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/typed/collector/v1/fake"
+	clientset "kube8-operator/pkg/generated/clientset/versioned"
+	examplev1alpha "kube8-operator/pkg/generated/clientset/versioned/typed/collector/v1alpha"
+	fakeexamplev1alpha "kube8-operator/pkg/generated/clientset/versioned/typed/collector/v1alpha/fake"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -79,7 +80,7 @@ var (
 	_ testing.FakeClient  = &Clientset{}
 )
 
-// ExampleV1 retrieves the ExampleV1Client
-func (c *Clientset) ExampleV1() examplev1.ExampleV1Interface {
-	return &fakeexamplev1.FakeExampleV1{Fake: &c.Fake}
+// ExampleV1alpha retrieves the ExampleV1alphaClient
+func (c *Clientset) ExampleV1alpha() examplev1alpha.ExampleV1alphaInterface {
+	return &fakeexamplev1alpha.FakeExampleV1alpha{Fake: &c.Fake}
 }

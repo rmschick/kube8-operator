@@ -12,14 +12,14 @@ linters-settings:
     sections:
       - standard # Captures all standard packages if they do not match another section.
       - default # Contains all imports that could not be matched to another section type.
-      - prefix(github.com/FishtechCSOC/terminal-poc-deployment) # Captures all imports that start with the given prefix.
+      - prefix(kube8-operator) # Captures all imports that start with the given prefix.
   gocritic:
     disabled-checks:
       - sloppyLen
   gocyclo:
     min-complexity: 10
   goimports:
-    local-prefixes: github.com/FishtechCSOC/terminal-poc-deployment
+    local-prefixes: kube8-operator
   govet:
     enable-all: true
     disable:
@@ -32,23 +32,61 @@ linters-settings:
       - err
 
 linters:
-  enable-all: true
-  disable:
-    - goerr113
-    - lll
-    - godot
-    - nolintlint
+  disable-all: true
+  enable:
+    - dupl
+    - errcheck
+    - copyloopvar
+    - funlen
+    - gci
+    - gocritic
+    - goconst
+    - goimports
+    - gofmt
+    - gofumpt
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - nakedret
+    - nestif
+    - nilerr
+    - nlreturn
+    - prealloc
+    - stylecheck
+    - tparallel
     - typecheck
-    - wrapcheck
-    - exhaustivestruct # DO NOT ENABLE, SHOULD BE USED SPARINGLY
-    - exhaustruct # DO NOT ENABLE, SHOULD BE USED SPARINGLY
-    - deadcode # IS DEPRECATED
-    - golint # IS DEPRECATED
-    - ifshort # IS DEPRECATED
-    - interfacer # IS DEPRECATED
-    - maligned # IS DEPRECATED
-    - nosnakecase # IS DEPRECATED
-    - scopelint # IS DEPRECATED
-    - structcheck # IS DEPRECATED
-    - varcheck # IS DEPRECATED
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+    - wsl
+    - tagalign
+    - tagliatelle
+    - usestdlibvars
+    - rowserrcheck
+    - sqlclosecheck
+    - godot
+    - godox
+    - asasalint
+    - cyclop
+    - gochecknoglobals
+    - interfacebloat
+    - nilnil
+    - noctx
+    - goprintffuncname
+    - nonamedreturns
+    - contextcheck
+    - bodyclose
+    - bidichk
+    - staticcheck
+    - durationcheck
+    - errname
+    - mirror
+    - ireturn
+    - nosprintfhostport
+    - predeclared
+    - promlinter
+    - errorlint
+    - gocheckcompilerdirectives
   fast: false

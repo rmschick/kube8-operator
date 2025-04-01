@@ -19,9 +19,9 @@ limitations under the License.
 package internalinterfaces
 
 import (
+	versioned "kube8-operator/pkg/generated/clientset/versioned"
 	time "time"
 
-	versioned "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	cache "k8s.io/client-go/tools/cache"

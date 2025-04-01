@@ -6,9 +6,9 @@ set -o pipefail
 
 CODEGEN_SCRIPT="./vendor/k8s.io/code-generator/generate-groups.sh"
 GENERATORS="all"
-OUTPUT_PACKAGE="github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated"
-APIS_PACKAGE="github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis"
-GROUPS_VERSIONS="collector:v1"
+OUTPUT_PACKAGE="kube8-operator/pkg/generated"
+APIS_PACKAGE="kube8-operator/pkg/apis"
+GROUPS_VERSIONS="collector:v1alpha"
 OUTPUT_BASE="."
 GO_HEADER_FILE="./hack/boilerplate.go.txt"
 
@@ -18,11 +18,12 @@ chmod +x ${CODEGEN_SCRIPT}
   --go-header-file "${GO_HEADER_FILE}"
 
 # Copy generated files to the target directory
-TARGET_DIR="./pkg"
+TARGET_DIR="kube8-operator/pkg"
 
 cp -rf "${OUTPUT_PACKAGE}" "${TARGET_DIR}"
 
-cp -rf "${APIS_PACKAGE}/collector/v1/zz_generated.deepcopy.go" "${TARGET_DIR}/apis/collector/v1"
+cp -rf "${APIS_PACKAGE}/collector/v1alpha/zz_generated.deepcopy.go" "${TARGET_DIR}/apis/collector/v1alpha"
 
 # Delete the generated code folder
-rm -rf "github.com"
+rm -rf "kube8-operator"
+

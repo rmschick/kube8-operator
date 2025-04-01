@@ -1,20 +1,11 @@
-project_name: terminal-poc-deployment
+project_name: kube8-operator
 env:
-  - LABEL_DOMAIN=cyderes.fishtech.group
   - CGO_ENABLED=0
 builds:
   - id: "{{.ProjectName}}"
     main: ./cmd/{{.ProjectName}}/main.go
     ldflags:
       - -s -w
-      - -X github.com/FishtechCSOC/common-go/pkg/build.Build={{.Version}}
-      - -X github.com/FishtechCSOC/common-go/pkg/build.Commit={{.FullCommit}}
-      - -X github.com/FishtechCSOC/common-go/pkg/build.Date={{.Date}}
-      - -X github.com/FishtechCSOC/common-go/pkg/build.Version={{.Env.GOVERSION}}
-      - -X github.com/FishtechCSOC/common-go/pkg/build.Program={{.Binary}}
-      - -X github.com/FishtechCSOC/common-go/pkg/build.Os={{.Os}}
-      - -X github.com/FishtechCSOC/common-go/pkg/build.Arch={{.Arch}}
-      - -X github.com/FishtechCSOC/common-go/pkg/build.Arm={{.Arm}}
     ignore:
       - goarch: '386'
 dockers:
@@ -46,6 +37,6 @@ changelog:
       - typo
 release:
   github:
-    owner: FishtechCSOC
-    name: terminal-poc-deployment
+    owner: rmschick
+    name: kube8-operator
   prerelease: auto

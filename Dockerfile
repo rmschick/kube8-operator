@@ -1,10 +1,10 @@
 FROM gcr.io/distroless/static:nonroot
 
-WORKDIR /terminal-poc-deployment
+WORKDIR /kube8-operator
 
-ENV PATH /terminal-poc-deployment/bin:$PATH
+ENV PATH /kube8-operator/bin:$PATH
 
 # Copy the binary
-COPY terminal-poc-deployment /bin/
+COPY kube8-operator /bin/
 
-ENTRYPOINT ["terminal-poc-deployment"]
+ENTRYPOINT ["kube8-operator"]

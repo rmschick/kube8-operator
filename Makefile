@@ -2,7 +2,6 @@ GOVERSION = $(shell go version | awk '{print $$3;}')
 SOURCE_FILES?=./...
 
 export PATH := ./bin:$(PATH)
-export GOPRIVATE := github.com/FishtechCSOC
 export CGO_ENABLED := 0
 
 clean:

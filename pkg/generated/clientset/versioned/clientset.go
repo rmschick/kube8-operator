@@ -20,9 +20,9 @@ package versioned
 
 import (
 	"fmt"
+	examplev1alpha "kube8-operator/pkg/generated/clientset/versioned/typed/collector/v1alpha"
 	"net/http"
 
-	examplev1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/clientset/versioned/typed/collector/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -30,18 +30,18 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	ExampleV1() examplev1.ExampleV1Interface
+	ExampleV1alpha() examplev1alpha.ExampleV1alphaInterface
 }
 
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	exampleV1 *examplev1.ExampleV1Client
+	exampleV1alpha *examplev1alpha.ExampleV1alphaClient
 }
 
-// ExampleV1 retrieves the ExampleV1Client
-func (c *Clientset) ExampleV1() examplev1.ExampleV1Interface {
-	return c.exampleV1
+// ExampleV1alpha retrieves the ExampleV1alphaClient
+func (c *Clientset) ExampleV1alpha() examplev1alpha.ExampleV1alphaInterface {
+	return c.exampleV1alpha
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -88,7 +88,7 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
-	cs.exampleV1, err = examplev1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.exampleV1alpha, err = examplev1alpha.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.exampleV1 = examplev1.New(c)
+	cs.exampleV1alpha = examplev1alpha.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

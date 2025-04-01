@@ -20,8 +20,8 @@ package externalversions
 
 import (
 	"fmt"
+	v1alpha "kube8-operator/pkg/apis/collector/v1alpha"
 
-	v1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/apis/collector/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -52,9 +52,9 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=example.com, Version=v1
-	case v1.SchemeGroupVersion.WithResource("collectors"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Example().V1().Collectors().Informer()}, nil
+	// Group=example.com, Version=v1alpha
+	case v1alpha.SchemeGroupVersion.WithResource("collectors"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Example().V1alpha().Collectors().Informer()}, nil
 
 	}
 

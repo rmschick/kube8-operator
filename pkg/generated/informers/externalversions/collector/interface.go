@@ -19,14 +19,14 @@ limitations under the License.
 package collector
 
 import (
-	v1 "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/informers/externalversions/collector/v1"
-	internalinterfaces "github.com/FishtechCSOC/terminal-poc-deployment/pkg/generated/informers/externalversions/internalinterfaces"
+	v1alpha "kube8-operator/pkg/generated/informers/externalversions/collector/v1alpha"
+	internalinterfaces "kube8-operator/pkg/generated/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.
 type Interface interface {
-	// V1 provides access to shared informers for resources in V1.
-	V1() v1.Interface
+	// V1alpha provides access to shared informers for resources in V1alpha.
+	V1alpha() v1alpha.Interface
 }
 
 type group struct {
@@ -40,7 +40,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &group{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// V1 returns a new v1.Interface.
-func (g *group) V1() v1.Interface {
-	return v1.New(g.factory, g.namespace, g.tweakListOptions)
+// V1alpha returns a new v1alpha.Interface.
+func (g *group) V1alpha() v1alpha.Interface {
+	return v1alpha.New(g.factory, g.namespace, g.tweakListOptions)
 }
