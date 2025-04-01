@@ -26,7 +26,7 @@ type TenantInfo struct {
 	Instance  string `json:"instance"`
 }
 
-// CollectorSpec defines the desired state of Collector
+// CollectorSpec defines the desired state of Collector.
 type CollectorSpec struct {
 	Collector CollectorInfo `json:"collector"`
 	Tenant    TenantInfo    `json:"tenant"`
@@ -45,7 +45,7 @@ type Collector struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// CollectorList is a list of Collector resources
+// CollectorList is a list of Collector resources.
 type CollectorList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -53,7 +53,7 @@ type CollectorList struct {
 	Items []Collector `json:"items"`
 }
 
-// CollectorStatus defines the observed state of Collector
+// CollectorStatus defines the observed state of Collector.
 type CollectorStatus struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchMergeKey:"type" patchStrategy:"merge" protobuf:"bytes,1,rep,name=conditions"`
