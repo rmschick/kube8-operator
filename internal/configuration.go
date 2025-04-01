@@ -2,9 +2,10 @@ package internal
 
 import (
 	"fmt"
+	"os"
+
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
 )
 
 // Configuration is the amalgamation of various configurations that may be needed.

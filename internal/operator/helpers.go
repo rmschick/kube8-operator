@@ -2,10 +2,11 @@ package operator
 
 import (
 	"encoding/base64"
+
 	"gopkg.in/yaml.v3"
 )
 
-// getValues unmarshals the base64 encoded YAML string into a map
+// getValues unmarshals the base64 encoded YAML string into a map.
 func getValues(configuration string) (map[string]interface{}, error) {
 	// Decode the base64 encoded YAML string
 	decodedYAML, err := base64.StdEncoding.DecodeString(configuration)

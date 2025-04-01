@@ -30,6 +30,8 @@ linters-settings:
     ignore-names:
       - ok
       - err
+  gofumpt:
+    module-path: kube8-operator
 
 linters:
   disable-all: true
