@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"kube8-operator/internal/instrumentation"
-	v1 "kube8-operator/pkg/apis/collector/v1alpha"
+	"kube8-operator/pkg/apis/collector/v1alpha"
 )
 
 const (
@@ -35,18 +35,18 @@ type CollectorReconciler struct {
 	Controller *Controller
 }
 
-// myDebug is a function that implements the Debug interface for Helm
-func myDebug(format string, v ...interface{}) {
+// myDebugf is a function that implements the Debug interface for Helm.
+func myDebugf(format string, v ...interface{}) {
 	fmt.Printf(format, v...)
 }
 
 // CreateOrUpdateCollector creates or updates a Kubernetes deployment in the cluster the operator is running on
 // nolint: gocyclo, cyclop
-func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resource *v1.Collector, update bool) error {
+func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resource *v1alpha.Collector, update bool) error {
 	var err error
 	// set the status as Unknown when no status is available (i.e. first time the resource is created)
 	// this is to prevent the status from being empty and causing errors
-	if resource.Status.Conditions == nil || len(resource.Status.Conditions) == 0 {
+	if len(resource.Status.Conditions) == 0 {
 		resource, err = r.Controller.UpdateStatus(ctx, resource, metav1.ConditionUnknown, "Reconciling", "Starting reconciliation")
 		if err != nil {
 			return err
@@ -74,7 +74,7 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 
 	actionConfig := new(action.Configuration)
 
-	if err = actionConfig.Init(setting.RESTClientGetter(), setting.Namespace(), "memory", myDebug); err != nil {
+	if err = actionConfig.Init(setting.RESTClientGetter(), setting.Namespace(), "memory", myDebugf); err != nil {
 		return fmt.Errorf("error initializing action config: %w", err)
 	}
 
@@ -102,7 +102,7 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 	}
 
 	// Update the status of the custom resource to show that the deployment was created/updated successfully
-	resource, err = r.Controller.UpdateStatus(ctx, resource, metav1.ConditionTrue, "Reconciling", fmt.Sprintf("Deployment for custom resource (%s) created/updated successfully", resource.Name))
+	_, err = r.Controller.UpdateStatus(ctx, resource, metav1.ConditionTrue, "Reconciling", fmt.Sprintf("Deployment for custom resource (%s) created/updated successfully", resource.Name))
 	if err != nil {
 		return err
 	}
@@ -110,8 +110,8 @@ func (r *CollectorReconciler) CreateOrUpdateCollector(ctx context.Context, resou
 	return nil
 }
 
-// getCollectorChart retrieves the collector chart from the helm chart bucket in AWS
-func getCollectorChart(ctx context.Context, resource *v1.Collector) (*chart.Chart, error) {
+// getCollectorChart retrieves the collector chart from the helm chart bucket in AWS.
+func getCollectorChart(ctx context.Context, resource *v1alpha.Collector) (*chart.Chart, error) {
 	awsCreds := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider("", "", ""))
 
 	awsConfig, err := config.LoadDefaultConfig(ctx, config.WithCredentialsProvider(awsCreds), config.WithRegion("us-west-2"), config.WithHTTPClient(instrumentation.InstrumentHTTPClient(&http.Client{})))
@@ -146,16 +146,16 @@ func getCollectorChart(ctx context.Context, resource *v1.Collector) (*chart.Char
 	return collectorChart, nil
 }
 
-// getLatestCollectorChartPath retrieves the latest collector chart path from the helm chart bucket in AWS whether it is in development or production
-func getLatestCollectorChartPath(ctx context.Context, resource *v1.Collector) (string, string, error) {
+// getLatestCollectorChartPath retrieves the latest collector chart path from the helm chart bucket in AWS whether it is in development or production.
+func getLatestCollectorChartPath(ctx context.Context, resource *v1alpha.Collector) (string, string, error) {
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: githubToken})
 	tc := oauth2.NewClient(ctx, ts)
 
-	// Create a GitHub client using the authenticated HTTP client
+	// Create a GitHub client using the authenticated HTTP client.
 	gitClient := github.NewClient(tc)
 
-	// Get the latest release for the collector chart based on the environment
-	// If the environment is production, then the latest release will be the latest release tag
+	// Get the latest release for the collector chart based on the environment.
+	// If the environment is production, then the latest release will be the latest release tag.
 	switch resource.Spec.Cluster {
 	case "development":
 		chartName := "charts/" + resource.Spec.Collector.Name + "-0.0.1.tgz"

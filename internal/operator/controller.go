@@ -172,7 +172,7 @@ func (c *Controller) RunWorker() {
 	}
 }
 
-// UpdateStatus updates the status of the Collector resource in the API server
+// UpdateStatus updates the status of the Collector resource in the API server.
 func (c *Controller) UpdateStatus(ctx context.Context, resource *v1.Collector, status metav1.ConditionStatus, reason string, message string) (*v1.Collector, error) {
 	// Retrieve the updated Collector resource so that we have the most recent version and UID
 	// Otherwise, the next time we try to update the status, we will get a conflict error

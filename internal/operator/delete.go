@@ -12,7 +12,7 @@ import (
 	v1Controller "kube8-operator/pkg/apis/collector/v1alpha"
 )
 
-// DeleteCollector deletes a collector deployment, service, serviceMonitor, and secret
+// DeleteCollector deletes a collector deployment, service, serviceMonitor, and secret.
 func (r *CollectorReconciler) DeleteCollector(ctx context.Context, clientset *kubernetes.Clientset, dynamicClient dynamic.Interface, resource *v1Controller.Collector) error {
 	// Create names of resources being deleted which follows the naming convention of the release name in the create.go file
 	// {collector-name}-{tenant-instance} ex: cisco-amp-collector-main
