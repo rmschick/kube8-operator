@@ -32,8 +32,3 @@ jobs:
           args: --timeout=5m
       - name: Run Tests
         run: go install gotest.tools/gotestsum@latest && make test
-      - name: Upload coverage
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage
-          path: coverage.*
