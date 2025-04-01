@@ -10,7 +10,7 @@ env:
 
 jobs:
   semantic:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Validate PR title
         uses: amannn/action-semantic-pull-request@v5.2.0
@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: write
       packages: write
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
