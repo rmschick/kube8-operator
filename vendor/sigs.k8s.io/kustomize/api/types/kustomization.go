@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"sigs.k8s.io/kustomize/kyaml/errors"
 	"sigs.k8s.io/kustomize/kyaml/filesys"
@@ -21,6 +22,7 @@ const (
 	MetadataNamespacePath       = "metadata/namespace"
 	MetadataNamespaceApiVersion = "v1"
 	MetadataNamePath            = "metadata/name"
+	NamespaceKind               = "Namespace"
 
 	OriginAnnotations      = "originAnnotations"
 	TransformerAnnotations = "transformerAnnotations"
@@ -54,6 +56,7 @@ type Kustomization struct {
 	// Namespace to add to all objects.
 	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 
+	// Deprecated: Use the Labels field instead, which provides a superset of the functionality of CommonLabels.
 	// CommonLabels to add to all objects and selectors.
 	CommonLabels map[string]string `json:"commonLabels,omitempty" yaml:"commonLabels,omitempty"`
 
@@ -187,6 +190,7 @@ const (
 	deprecatedPatchesJson6902Message           = "# Warning: 'patchesJson6902' is deprecated. Please use 'patches' instead." + " " + deprecatedWarningToRunEditFix
 	deprecatedPatchesStrategicMergeMessage     = "# Warning: 'patchesStrategicMerge' is deprecated. Please use 'patches' instead." + " " + deprecatedWarningToRunEditFix
 	deprecatedVarsMessage                      = "# Warning: 'vars' is deprecated. Please use 'replacements' instead." + " " + deprecatedWarningToRunEditFixExperimential
+	deprecatedCommonLabelsWarningMessage       = "# Warning: 'commonLabels' is deprecated. Please use 'labels' instead." + " " + deprecatedWarningToRunEditFix
 )
 
 // CheckDeprecatedFields check deprecated field is used or not.
@@ -194,6 +198,9 @@ func (k *Kustomization) CheckDeprecatedFields() *[]string {
 	var warningMessages []string
 	if k.Bases != nil {
 		warningMessages = append(warningMessages, deprecatedBaseWarningMessage)
+	}
+	if k.CommonLabels != nil {
+		warningMessages = append(warningMessages, deprecatedCommonLabelsWarningMessage)
 	}
 	if k.ImageTags != nil {
 		warningMessages = append(warningMessages, deprecatedImageTagsWarningMessage)
@@ -295,6 +302,20 @@ func (k *Kustomization) FixKustomizationPreMarshalling(fSys filesys.FileSystem) 
 		}
 		k.Labels = append(k.Labels, *cl)
 		k.CommonLabels = nil
+	}
+
+	return nil
+}
+
+func (k *Kustomization) CheckEmpty() error {
+	// generate empty Kustomization
+	emptyKustomization := &Kustomization{}
+
+	// k.TypeMeta is metadata. It Isn't related to whether empty or not.
+	emptyKustomization.TypeMeta = k.TypeMeta
+
+	if reflect.DeepEqual(k, emptyKustomization) {
+		return fmt.Errorf("kustomization.yaml is empty")
 	}
 
 	return nil
