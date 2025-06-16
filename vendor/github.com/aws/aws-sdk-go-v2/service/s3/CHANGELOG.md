@@ -1,3 +1,31 @@
+# v1.80.2 (2025-06-10)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.80.1 (2025-06-06)
+
+* No change notes available for this release.
+
+# v1.80.0 (2025-05-29)
+
+* **Feature**: Adding checksum support for S3 PutBucketOwnershipControls API.
+
+# v1.79.4 (2025-05-22)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.79.3 (2025-04-28)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.79.2 (2025-04-10)
+
+* No change notes available for this release.
+
+# v1.79.1 (2025-04-03)
+
+* No change notes available for this release.
+
 # v1.79.0 (2025-03-31)
 
 * **Feature**: Amazon S3 adds support for S3 Access Points for directory buckets in AWS Dedicated Local Zones
